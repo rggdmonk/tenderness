@@ -7,8 +7,8 @@ hide:
 
 
 <figure markdown="span">
-  ![tenderness_logo_dark](../assets/logo/tenderness-lockup-horizontal-dark.svg#only-dark){ width="500" }
-  ![tenderness_logo_light](../assets/logo/tenderness-lockup-horizontal-light.svg#only-light){ width="500" }
+  ![tenderness_logo_dark](assets/logo/tenderness-lockup-horizontal-dark.svg#only-dark){ width="500" }
+  ![tenderness_logo_light](assets/logo/tenderness-lockup-horizontal-light.svg#only-light){ width="500" }
 </figure>
 
 **tenderness** is a fast library for *synthetic*, deterministic document rendering from text and images, powered by [Cairo](https://www.cairographics.org/) and [Pango](https://docs.gtk.org/Pango/index.html).
