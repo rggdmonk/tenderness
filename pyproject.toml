@@ -1,0 +1,46 @@
+# ============================================================================
+# Project
+# ============================================================================
+[project]
+name = "tenderness"
+description = "Library for text rendering"
+readme = "README.md"
+license-files = ["LICEN[CS]E*", "NOTICE*"]
+authors = [{ name = "Pavel Stepachev" }]
+
+version = "0.0.0"
+requires-python = ">=3.13"
+
+# ============================================================================
+# Dependencies
+# ============================================================================
+dependencies = [
+  "PyGObject < 3.52.0",  # https://github.com/matplotlib/matplotlib/issues/29732 # TODO: create issue
+  "lxml",
+  "matplotlib",
+  "numpy >= 2.0.0",
+  "pycairo",  # https://github.com/pygobject/pycairo
+  "requests",
+  "tqdm",
+]
+
+[dependency-groups]
+dev = [
+  { include-group = "docs" },
+  { include-group = "lint" },
+  { include-group = "test" },
+  { include-group = "tools" },
+  { include-group = "typing" }
+]
+docs = ["zensical==0.0.37"]
+lint = ["ruff"]
+test = ["coverage", "pytest >= 9.0"]
+tools = ["pre-commit"]
+typing = ["mypy", "pygobject-stubs", "types-requests"]
+
+# ============================================================================
+# Build System
+# ============================================================================
+[build-system]
+requires = ["uv_build>=0.11.4,<0.12.0"]
+build-backend = "uv_build"

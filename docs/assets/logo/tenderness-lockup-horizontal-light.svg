@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 240 60">
+  <defs><radialGradient id="ig_lh" cx="42%" cy="48%" r="62%">
+        <stop offset="0%" stop-color="#68bef4"></stop>
+        <stop offset="20%" stop-color="#7a9cec"></stop>
+        <stop offset="48%" stop-color="#8a65ae"></stop>
+        <stop offset="78%" stop-color="#75528b"></stop>
+        <stop offset="100%" stop-color="#2a1a35"></stop>
+      </radialGradient></defs>
+  
+  <g transform="translate(0,0)">
+    <circle cx="30" cy="30" r="26" fill="url(#ig_lh)"></circle>
+  </g>
+  <text x="68" y="40" font-family="Inter Tight, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-weight="500" font-size="34" letter-spacing="-0.7" fill="#161318">tenderness</text>
+</svg>

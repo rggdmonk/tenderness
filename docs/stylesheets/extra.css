@@ -1,0 +1,295 @@
+/* ============================================================
+   COLOUR PALETTE
+   Five gradient colours + text + border tokens.
+   Change a value here and it updates everywhere on the page.
+   ============================================================ */
+:root {
+  /* Background gradient blob colours */
+  --color-ninja-princess: #75528b;
+  --color-dark-raspberry: #9a3865;
+  --color-muted-violet:   #8a65ae;
+  --color-cornflower:     #7a9cec;
+  --color-vivid-sky:      #68bef4;
+
+  /* Text colours — "full" is pure, "muted" and "faint" are semi-transparent */
+  --color-text:       #f4eef7;
+  --color-text-muted: rgba(244, 238, 247, 0.66);
+  --color-text-faint: rgba(244, 238, 247, 0.42);
+
+  /* Thin lines (borders, dividers) */
+  --border-subtle:  rgba(255, 255, 255, 0.10);
+  --border-visible: rgba(255, 255, 255, 0.18);
+}
+
+
+/* ============================================================
+   MKDOCS OVERRIDES
+   Hide MkDocs' built-in header, tabs and footer so the landing
+   page can render full-screen without those chrome elements.
+   ============================================================ */
+body:has(.landing-page) .md-header,
+body:has(.landing-page) .md-tabs,
+body:has(.landing-page) .md-footer {
+  display: none !important;
+}
+
+/* Prevent scrollbars — the landing is designed to fit one screen */
+html:has(.landing-page),
+body:has(.landing-page) {
+  overflow: hidden;
+  height: 100%;
+}
+
+body:has(.landing-page) {
+  background: #120a1f;
+  color: var(--color-text);
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased; /* crisper text on Mac/iOS */
+}
+
+/* Strip MkDocs' default padding/margins so our layout fills the screen */
+body:has(.landing-page) .md-main,
+body:has(.landing-page) .md-main__inner,
+body:has(.landing-page) .md-content,
+body:has(.landing-page) .md-content__inner {
+  background: transparent;
+  padding: 0 !important;
+  margin: 0 !important;
+  max-width: 100% !important;
+}
+
+
+/* ============================================================
+   ANIMATED BACKGROUND
+   Five soft elliptical blobs of colour, fixed behind everything.
+   The animation gently pulses the overall opacity.
+   ============================================================ */
+.landing-background {
+  position: fixed;    /* stays in place while content scrolls */
+  inset: 0;           /* shorthand for top/right/bottom/left: 0 */
+  z-index: 0;         /* behind all page content */
+  background:
+    radial-gradient(ellipse 60% 55% at 20% 30%, color-mix(in srgb, var(--color-ninja-princess) 90%, transparent) 0%, transparent 100%),
+    radial-gradient(ellipse 55% 55% at 72% 65%, color-mix(in srgb, var(--color-dark-raspberry) 85%, transparent) 0%, transparent 100%),
+    radial-gradient(ellipse 65% 55% at 50% 88%, color-mix(in srgb, var(--color-muted-violet)   90%, transparent) 0%, transparent 100%),
+    radial-gradient(ellipse 55% 60% at 80% 15%, color-mix(in srgb, var(--color-cornflower)     80%, transparent) 0%, transparent 100%),
+    radial-gradient(ellipse 50% 50% at 10% 72%, color-mix(in srgb, var(--color-vivid-sky)      75%, transparent) 0%, transparent 100%),
+    #120a1f;
+  animation: backgroundPulse 8s ease-in-out infinite alternate;
+}
+
+/* Dark vignette ring around the edges — keeps text readable */
+.landing-background::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 80% at 50% 50%, rgba(11, 7, 18, 0.20) 0%, rgba(11, 7, 18, 0.60) 100%);
+}
+
+/* Pulse animation: fades between 85 % and 100 % opacity */
+@keyframes backgroundPulse {
+  from { opacity: 0.85; }
+  to   { opacity: 1.00; }
+}
+
+/* Respect the user's "reduce motion" system setting */
+@media (prefers-reduced-motion: reduce) {
+  .landing-background {
+    animation: none !important;
+  }
+}
+
+
+/* ============================================================
+   PAGE SHELL
+   Full-screen flex column: nav at top, hero in middle, footer at bottom.
+   ============================================================ */
+.landing-page {
+  position: relative;
+  z-index: 1;           /* sits above the fixed background */
+  width: 100%;
+  min-height: 100vh;    /* at least the full viewport height */
+  /* Break out of MkDocs' centered content wrapper */
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Centred, max-width content column with horizontal padding */
+.landing-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+  width: 100%;
+}
+
+/* Horizontal flex row used inside nav and footer */
+.landing-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+
+/* ============================================================
+   NAVIGATION BAR
+   ============================================================ */
+.landing-nav {
+  padding: 22px 0;
+}
+
+/* "tenderness" brand link in the top-left corner */
+.landing-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: #ffffff !important; /* !important overrides MkDocs link colour */
+  text-decoration: none;
+}
+
+/* Small square logo mark — loaded from the shared SVG asset */
+.landing-logo-mark {
+  width: 32px;
+  height: 32px;
+  background-image: url('../assets/logo/tenderness-mark-32.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  flex-shrink: 0; /* never squish the mark when space is tight */
+}
+
+
+/* ============================================================
+   HERO SECTION
+   The main headline, subtitle and call-to-action buttons.
+   flex: 1 makes it expand to fill all remaining vertical space.
+   ============================================================ */
+.landing-hero {
+  padding: 140px 0 140px;
+  flex: 1;
+}
+
+/* Large display headline */
+.landing-hero h1 {
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
+  /* clamp(min, preferred, max) — scales with viewport width */
+  font-size: clamp(48px, 7vw, 96px);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  margin: 0 0 28px;
+  max-width: 14ch; /* wrap after ~14 characters for a nice shape */
+  text-wrap: balance;
+  text-shadow: 0 2px 30px rgba(11, 7, 18, 0.5);
+  color: var(--color-text);
+  border: none; /* MkDocs adds a bottom border to h1 — remove it */
+}
+
+/* Italic pink accent text inside the headline */
+.landing-hero h1 .accent {
+  font-style: italic;
+  font-weight: 500;
+  color: #fcc1db;
+}
+
+/* Subtitle paragraph below the headline */
+.landing-subtitle {
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--color-text);
+  max-width: 60ch;
+  margin: 0 0 40px;
+  text-wrap: pretty; /* smarter line-break algorithm for prose */
+  text-shadow: 0 1px 20px rgba(11, 7, 18, 0.6);
+}
+
+/* Library name "tenderness" highlighted inside the subtitle */
+.landing-lib-name {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Row of call-to-action buttons */
+.landing-cta {
+  display: flex;
+  flex-wrap: wrap; /* wraps to a second line on narrow screens */
+  gap: 12px;
+  align-items: center;
+}
+
+
+/* ============================================================
+   BUTTONS
+   Base styles shared by all buttons, then per-variant overrides.
+   ============================================================ */
+.landing-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: "Inter", sans-serif;
+  line-height: 1;
+  text-decoration: none !important;
+  border: 1px solid transparent;
+  transition: transform 0.15s ease, background 0.2s, border-color 0.2s;
+}
+
+/* Slight press-down effect on click */
+.landing-btn:active {
+  transform: translateY(1px);
+}
+
+/* Primary button — solid light fill, dark text */
+.landing-btn--primary {
+  background: var(--color-text);
+  color: #1a0e2e !important;
+}
+
+.landing-btn--primary:hover {
+  background: white;
+  color: #1a0e2e !important;
+}
+
+/* Ghost button — transparent with border, used for the pip install command */
+.landing-btn--ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text) !important;
+  border-color: var(--border-visible);
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 500;
+  white-space: nowrap; /* prevents "pip install tenderness" from wrapping */
+}
+
+.landing-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* The "$" prompt symbol inside the ghost button */
+.landing-prompt-symbol {
+  color: var(--color-text-faint);
+}
+
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.landing-footer {
+  padding: 28px 0;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 40px;
+}
+
+/* Copyright text */
+.landing-copyright {
+  color: var(--color-text-faint);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+}

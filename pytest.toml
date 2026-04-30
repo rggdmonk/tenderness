@@ -1,0 +1,14 @@
+[pytest]
+minversion = "9.0"
+pythonpath = ["."]
+norecursedirs = ["tests/_test_utils"]
+
+markers = [
+  "e2e: mark end-to-end tests",
+  "eternal_contract: mark contract tests",
+]
+
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s | %(name)s | %(module)s | %(funcName)s | %(levelname)s | %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
