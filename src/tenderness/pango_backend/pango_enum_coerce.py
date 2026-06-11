@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Pango enum coercion utilities and string type aliases."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
@@ -27,9 +29,25 @@ gi.require_version("Pango", "1.0")
 from gi.repository import Pango  # noqa: E402
 
 
-class PangoEnumCoerce:  # noqa: D101 TODO: docstring
+class PangoEnumCoerce:
+    """Utilities for building lowercase string-to-enum maps and coercing values for Pango enums."""
+
     @staticmethod
-    def build_map(enum_type: type, exclude: frozenset[str] = frozenset()) -> dict[str, object]:  # noqa: D102 TODO: docstring
+    def build_map[T](enum_type: type[T], exclude: frozenset[str] = frozenset()) -> dict[str, T]:
+        """Build a lowercase name-to-value map from a Pango enum type, excluding specified members.
+
+        Parameters
+        ----------
+        enum_type
+            Pango enum class to introspect; non-public and non-integer attributes are excluded.
+        exclude
+            Set of member names to exclude from the map, by default frozenset().
+
+        Returns
+        -------
+        dict[str, T]
+            Mapping of lowercase member name to enum value.
+        """
         result = {}
         for member in enum_type.__enum_values__.values():  # type: ignore[attr-defined]
             nick = member.value_nick.lower()
@@ -38,7 +56,26 @@ class PangoEnumCoerce:  # noqa: D101 TODO: docstring
         return result
 
     @staticmethod
-    def coerce[T](mapping: Mapping[str, object], value: T | str) -> T:  # noqa: D102 TODO: docstring
+    def coerce[T](mapping: Mapping[str, object], value: T | str) -> T:
+        """Coerce a string value to its enum counterpart using a mapping.
+
+        Parameters
+        ----------
+        mapping
+            Lowercase name-to-value map, produced by ``build_map``.
+        value
+            Value to coerce; returned unchanged if not a string.
+
+        Returns
+        -------
+        T
+            The original value if not a string, or the mapped enum value.
+
+        Raises
+        ------
+        ValueError
+            If ``value`` is a string not present in ``mapping``.
+        """
         if not isinstance(value, str):
             return value
 
@@ -51,7 +88,37 @@ class PangoEnumCoerce:  # noqa: D101 TODO: docstring
         return result  # type: ignore[return-value]
 
 
-class PangoEnumMap:  # noqa: D101 TODO: docstring
+class PangoEnumMap:
+    """Pre-built lowercase string-to-value maps for Pango enums.
+
+    Attributes
+    ----------
+    WrapMode
+        Map for ``Pango.WrapMode``.
+    EllipsizeMode
+        Map for ``Pango.EllipsizeMode``.
+    Alignment
+        Map for ``Pango.Alignment``.
+    Gravity
+        Map for ``Pango.Gravity``.
+    Stretch
+        Map for ``Pango.Stretch``.
+    Style
+        Map for ``Pango.Style``.
+    Variant
+        Map for ``Pango.Variant``.
+    Weight
+        Map for ``Pango.Weight``.
+    FontColor
+        Map for ``Pango.FontColor``.
+    Direction
+        Map for ``Pango.Direction``.
+    GravityHint
+        Map for ``Pango.GravityHint``.
+    TabAlign
+        Map for ``Pango.TabAlign``.
+    """
+
     # Pango.Layout
     WrapMode = PangoEnumCoerce.build_map(enum_type=Pango.WrapMode)
     EllipsizeMode = PangoEnumCoerce.build_map(enum_type=Pango.EllipsizeMode)

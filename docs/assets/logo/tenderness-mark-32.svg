@@ -1,13 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 100 100">
-  <defs>
-    <radialGradient id="ig_32" cx="42%" cy="48%" r="62%">
-      <stop offset="0%" stop-color="#68bef4"></stop>
-      <stop offset="20%" stop-color="#7a9cec"></stop>
-      <stop offset="48%" stop-color="#8a65ae"></stop>
-      <stop offset="78%" stop-color="#75528b"></stop>
-      <stop offset="100%" stop-color="#2a1a35"></stop>
-    </radialGradient>
-  </defs>
-  
-  <circle cx="50" cy="50" r="44" fill="url(#ig_32)"></circle>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32" viewBox="0 0 32 32">
+<defs>
+<radialGradient id="radial-pattern-0" gradientUnits="userSpaceOnUse" cx="42.96" cy="48.24" fx="42.96" fy="48.24" r="54.56" gradientTransform="matrix(0.32, 0, 0, 0.32, 0, 0)">
+<stop offset="0" stop-color="rgb(40.784314%, 74.509804%, 95.686275%)" stop-opacity="1"/>
+<stop offset="0.2" stop-color="rgb(47.843137%, 61.176471%, 92.54902%)" stop-opacity="1"/>
+<stop offset="0.48" stop-color="rgb(54.117647%, 39.607843%, 68.235294%)" stop-opacity="1"/>
+<stop offset="0.78" stop-color="rgb(45.882353%, 32.156863%, 54.509804%)" stop-opacity="1"/>
+<stop offset="1" stop-color="rgb(16.470588%, 10.196078%, 20.784314%)" stop-opacity="1"/>
+</radialGradient>
+</defs>
+<path fill-rule="nonzero" fill="url(#radial-pattern-0)" d="M 30.078125 16 C 30.078125 23.777344 23.777344 30.078125 16 30.078125 C 8.222656 30.078125 1.921875 23.777344 1.921875 16 C 1.921875 8.222656 8.222656 1.921875 16 1.921875 C 23.777344 1.921875 30.078125 8.222656 30.078125 16 "/>
 </svg>

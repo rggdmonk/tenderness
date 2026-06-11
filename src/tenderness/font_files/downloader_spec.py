@@ -25,7 +25,7 @@ from urllib.parse import unquote, urlparse
 class FontFileDownloadSource:
     """Source specification for a font file download.
 
-    Parameters
+    Attributes
     ----------
     url
         URL to download from.
@@ -64,11 +64,23 @@ class FontFileDownloadSource:
         self.file_name = file_name.lower()
 
     def to_dict(self) -> dict[str, str]:
-        """Return a dict representation of this source."""
+        """Return a dict representation of this source.
+
+        Returns
+        -------
+        dict[str, str]
+            Dictionary with ``url`` and ``file_name`` keys.
+        """
         return asdict(self)
 
     def __str__(self) -> str:
-        """Return a human-readable summary."""
+        """Return a human-readable summary.
+
+        Returns
+        -------
+        str
+            ``"<file_name> ← <url>"`` formatted string.
+        """
         return f"{self.file_name} ← {self.url}"
 
 
@@ -76,14 +88,14 @@ class FontFileDownloadSource:
 class FontFileDownloadResult:
     """Result of a single font file download attempt.
 
-    Parameters
+    Attributes
     ----------
     url
         URL that was downloaded.
     output_file_path
         Path where the file was saved.
     success
-        Whether the download succeeded.
+        ``True`` if the download succeeded.
     sha256
         Hex digest of the downloaded file; ``None`` if the download failed.
     """
@@ -94,5 +106,11 @@ class FontFileDownloadResult:
     sha256: str | None = None  # hex digest; None if download failed
 
     def to_dict(self) -> dict[str, str | bool | pathlib.Path | None]:
-        """Return a dict representation of this result."""
+        """Return a dict representation of this result.
+
+        Returns
+        -------
+        dict[str, str | bool | pathlib.Path | None]
+            Dictionary with ``url``, ``output_file_path``, ``success``, and ``sha256`` keys.
+        """
         return asdict(self)

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Fontconfig-based font setup for cairo/pango rendering."""
+"""Fontconfig-based font setup for rendering."""
 
 from __future__ import annotations
 
@@ -61,7 +61,13 @@ _TENDERNESS_FONTCONFIG_FILE_ENV = "FONTCONFIG_FILE"
 
 
 class FontSetup:
-    """Manages fontconfig and PangoCairo font environment setup."""
+    """Manages fontconfig and font environment setup.
+
+    Attributes
+    ----------
+    manager_map
+        Mapping from platform to the corresponding fontconfig manager class.
+    """
 
     manager_map: ClassVar[dict[SupportedPlatforms, type[BaseFontconfigManager]]] = {
         SupportedPlatforms.DARWIN: DarwinFontconfigManager,  # macOS
@@ -221,7 +227,13 @@ class FontSetup:
         raise RuntimeError(msg)
 
     def _reinitialize_fontconfig_cache(self) -> None:
-        """Force the Fontconfig C-library to re-initialize and reread its configuration from environment variables."""
+        """Force the Fontconfig C-library to re-initialize and reread its configuration from environment variables.
+
+        Raises
+        ------
+        RuntimeError
+            If the fontconfig library cannot be loaded or ``FcInitReinitialize`` fails.
+        """
         fontconfig, lib_path = self._find_and_load_fontconfig()
         logger.debug("Successfully loaded fontconfig library from: %s", lib_path)
 
@@ -239,7 +251,9 @@ class FontSetup:
 
         logger.debug("Successfully called FcInitReinitialize.")
 
-    def _configure_environment(self, result_path: pathlib.Path, *, force_reinitialize: bool = True) -> None:
+    def _configure_environment(
+        self, result_path: pathlib.Path, *, force_reinitialize: bool = True, resolution: float | None = None
+    ) -> None:
         os.environ[_TENDERNESS_PANGOCAIRO_BACKEND_ENV] = _TENDERNESS_PANGOCAIRO_BACKEND_VALUE
         os.environ[_TENDERNESS_FONTCONFIG_FILE_ENV] = str(result_path)
         logger.debug(
@@ -258,6 +272,12 @@ class FontSetup:
             new_font_map = PangoCairo.FontMap.new()
             PangoCairo.FontMap.set_default(new_font_map)  # type: ignore
             logger.debug("Set new PangoCairo default FontMap to clear font cache.")
+            if resolution is not None:
+                new_font_map.set_resolution(resolution)  # type: ignore[attr-defined]
+                logger.debug("Set PangoCairo FontMap resolution to: %s DPI", resolution)
+        elif resolution is not None:
+            PangoCairo.FontMap.get_default().set_resolution(resolution)  # type: ignore[attr-defined]
+            logger.debug("Set PangoCairo FontMap resolution to: %s DPI", resolution)
 
     # --------------------------
     # Public API
@@ -328,8 +348,9 @@ class FontSetup:
         fontconfig_destination_dir: pathlib.Path | str = TENDERNESS_FONTCONFIGS_DIR,
         *,
         force_reinitialize: bool = True,
+        resolution: float | None = None,
     ) -> pathlib.Path:
-        """Set up fontconfig and apply it to the PangoCairo environment.
+        """Set up fontconfig and apply it to the environment.
 
         Parameters
         ----------
@@ -343,11 +364,14 @@ class FontSetup:
             Directory where generated fontconfig files are written.
         force_reinitialize
             Force the Fontconfig C-library to re-initialize after setup.
+        resolution
+            Global font map DPI for converting point-sized fonts to device pixels.
+            ``None`` leaves the font map default (96.0) unchanged.
 
-        Raises
-        ------
-        ValueError
-            If a required parameter is missing for the selected mode.
+        Returns
+        -------
+        pathlib.Path
+            Resolved path to the active fontconfig file.
         """
         if isinstance(fontconfig_source_path, str):
             fontconfig_source_path = pathlib.Path(fontconfig_source_path)
@@ -364,12 +388,20 @@ class FontSetup:
         )
 
         # configure environment variables
-        self._configure_environment(result_path=result_path, force_reinitialize=force_reinitialize)
+        self._configure_environment(
+            result_path=result_path, force_reinitialize=force_reinitialize, resolution=resolution
+        )
 
         return result_path
 
     def get_all_font_families(self) -> list[str]:
-        """Return all available font family names from the default PangoCairo font map."""
+        """Return all available font family names from the default PangoCairo font map.
+
+        Returns
+        -------
+        list[str]
+            Sorted list of font family names.
+        """
         font_map = PangoCairo.FontMap.get_default()
         # font_map = PangoCairo.font_map_get_default()
         # font_map = PangoCairo.FontMap.new()
@@ -379,14 +411,52 @@ class FontSetup:
         return font_family_names
 
     def is_font_family_available(self, family_name: str) -> bool:
-        """Return True if family_name is available in the current PangoCairo font map.
+        """Check if ``family_name`` is available in the current PangoCairo font map.
 
         Parameters
         ----------
         family_name
             Font family name to check.
+
+        Returns
+        -------
+        bool
+            ``True`` if the font family is available.
         """
         available_families = self.get_all_font_families()
         is_available = family_name in available_families
         logger.debug("Font family '%s' availability: %s", family_name, is_available)
         return is_available
+
+    def get_font_map_resolution(self) -> float:
+        """Return the DPI of the default PangoCairo font map.
+
+        Returns
+        -------
+        float
+            Current resolution in dots per inch (default 96.0).
+
+        Notes
+        -----
+        This is the fallback DPI inherited by any Pango context whose
+        per-context resolution is 0 or negative.
+        """
+        return float(PangoCairo.FontMap.get_default().get_resolution())  # type: ignore[attr-defined]
+
+    def set_font_map_resolution(self, dpi: float) -> None:
+        """Set the DPI of the default PangoCairo font map.
+
+        Parameters
+        ----------
+        dpi
+            Resolution in dots per inch to apply globally.
+
+        Notes
+        -----
+        Affects all Pango contexts that have not overridden resolution
+        individually via ``LayoutContextInterface.resolution``.
+        Prefer passing ``resolution`` to ``setup_font()`` when also
+        reinitializing fonts, so the value is applied to the fresh map.
+        """
+        PangoCairo.FontMap.get_default().set_resolution(dpi)  # type: ignore[attr-defined]
+        logger.debug("Set PangoCairo FontMap resolution to: %s DPI", dpi)

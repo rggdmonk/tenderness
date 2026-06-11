@@ -36,6 +36,7 @@ RENDER_CONFIGURATOR_EXPECTED_METHODS = {
     "create_font_options_interface",
     "create_transform_pipeline_from_cairo_context",
     "create_transform_pipeline_from_existing",
+    "show_layout",
 }
 RENDER_CONFIGURATOR_TEST_CLASS_CONFIG = [
     ClassTestConfig(

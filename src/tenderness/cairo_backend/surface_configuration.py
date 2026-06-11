@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Cairo surface configuration dataclasses and manager."""
+"""Surface configuration dataclasses."""
 
 from __future__ import annotations
 
@@ -43,7 +43,17 @@ if TYPE_CHECKING:
 
 @unique
 class SurfaceType(StrEnum):
-    """Supported cairo surface output types."""
+    """Supported cairo surface output types.
+
+    Attributes
+    ----------
+    IMAGE
+        Raster image surface.
+    SVG
+        SVG vector surface.
+    PDF
+        PDF vector surface.
+    """
 
     IMAGE = auto()
     SVG = auto()
@@ -62,6 +72,11 @@ class SurfaceRect(Rectangle):
         config
             Configuration whose dimensions define the rectangle.
 
+        Returns
+        -------
+        Self
+            Rectangle with origin at ``(0, 0)`` and the surface dimensions.
+
         Raises
         ------
         ValueError
@@ -77,7 +92,7 @@ class SurfaceRect(Rectangle):
 class SurfaceConfig(ABC):
     """Abstract base configuration for a cairo rendering surface.
 
-    Parameters
+    Attributes
     ----------
     width
         Surface width.
@@ -118,20 +133,38 @@ class SurfaceConfig(ABC):
     # --------------------------
     @cached_property
     def rect(self) -> SurfaceRect:
-        """Return a SurfaceRect representing the surface bounds, anchored at the origin."""
+        """Return a SurfaceRect representing the surface bounds, anchored at the origin.
+
+        Returns
+        -------
+        SurfaceRect
+            Rectangle with origin at ``(0, 0)`` and the surface dimensions.
+        """
         return SurfaceRect.from_surface_config(self)
 
     # --------------------------
     # Methods
     # --------------------------
     def _validate_dimensions(self) -> None:
-        """Validate the surface dimensions are positive."""
+        """Validate the surface dimensions are positive.
+
+        Raises
+        ------
+        ValueError
+            If either dimension is not positive.
+        """
         if self.width <= 0 or self.height <= 0:
             msg = f"Invalid surface dimensions: {self.width=}, {self.height=}. Both must be positive."
             raise ValueError(msg)
 
     def _validate_backend_support(self) -> None:
-        """Validate that the chosen image backend supports the specified image format."""
+        """Validate that the chosen image backend supports the specified image format.
+
+        Raises
+        ------
+        ValueError
+            If the backend does not support the image format.
+        """
         if not self.image_backend.is_image_format_supported(image_format=self.image_format):
             msg = (
                 f"{type(self.image_backend).__name__} '{self.image_backend.name}' "
@@ -141,7 +174,13 @@ class SurfaceConfig(ABC):
             raise ValueError(msg)
 
     def _validate_alpha_compatibility(self) -> None:
-        """Validate that the image format can handle the alpha channel if requested."""
+        """Validate that the image format can handle the alpha channel if requested.
+
+        Raises
+        ------
+        ValueError
+            If the color model requires alpha but the image format does not support it.
+        """
         if self.color_model.has_alpha and not self.image_format.supports_alpha:
             msg = (
                 f"{ColorModel.__name__} {self.color_model} requires alpha support, "
@@ -152,7 +191,15 @@ class SurfaceConfig(ABC):
 
 @dataclass(frozen=True)
 class RasterSurfaceConfig(SurfaceConfig, ABC):
-    """Abstract base configuration for raster (pixel-based) surfaces."""
+    """Abstract base configuration for raster (pixel-based) surfaces.
+
+    Attributes
+    ----------
+    width
+        Surface width in pixels.
+    height
+        Surface height in pixels.
+    """
 
     width: int
     height: int
@@ -163,7 +210,13 @@ class RasterSurfaceConfig(SurfaceConfig, ABC):
         self._validate_raster_requirement()
 
     def _validate_raster_requirement(self) -> None:
-        """Ensure the image format is raster, not vector."""
+        """Ensure the image format is raster, not vector.
+
+        Raises
+        ------
+        ValueError
+            If the image format is vector-based.
+        """
         if self.image_format.is_vector:
             msg = f"{type(self).__name__} requires a raster format, but got {self.image_format.name}."
             raise ValueError(msg)
@@ -173,10 +226,10 @@ class RasterSurfaceConfig(SurfaceConfig, ABC):
 class VectorSurfaceConfig(SurfaceConfig, ABC):
     """Abstract base configuration for vector output surfaces.
 
-    Parameters
+    Attributes
     ----------
     fallback_resolution
-        Optional (x, y) resolution for rasterized fallback content.
+        Optional ``(x, y)`` resolution for rasterized fallback content.
     """
 
     fallback_resolution: Settable[tuple[float, float]] = _UNSET_PARAM
@@ -191,7 +244,13 @@ class VectorSurfaceConfig(SurfaceConfig, ABC):
         self._validate_fallback_resolution()
 
     def _validate_fallback_resolution(self) -> None:
-        """Validate fallback resolution values are positive if provided."""
+        """Validate fallback resolution values are positive if provided.
+
+        Raises
+        ------
+        ValueError
+            If either resolution value is not positive.
+        """
         if self.fallback_resolution is not _UNSET_PARAM:
             x, y = self.fallback_resolution
             if x <= 0 or y <= 0:
@@ -199,7 +258,13 @@ class VectorSurfaceConfig(SurfaceConfig, ABC):
                 raise ValueError(msg)
 
     def _validate_vector_requirements(self) -> None:
-        """Ensure the configuration is appropriate for vector output."""
+        """Ensure the configuration is appropriate for vector output.
+
+        Raises
+        ------
+        ValueError
+            If the image format is not vector-based or the backend lacks vector support.
+        """
         if not self.image_format.is_vector:
             msg = f"{type(self).__name__} requires a vector format, but got {self.image_format.name}."
             raise ValueError(msg)
@@ -211,12 +276,12 @@ class VectorSurfaceConfig(SurfaceConfig, ABC):
 
 @dataclass(frozen=True)
 class ImageSurfaceConfig(RasterSurfaceConfig):
-    """Configuration for a raster image cairo surface.
+    """Configuration for a raster image surface.
 
-    Parameters
+    Attributes
     ----------
     pixel_format
-        Pixel format for the cairo image surface.
+        Pixel format for the image surface.
     """
 
     pixel_format: PixelFormat
@@ -238,7 +303,13 @@ class ImageSurfaceConfig(RasterSurfaceConfig):
     # Methods
     # --------------------------
     def _validate_pixel_format(self) -> None:
-        """Ensure the pixel format is compatible with the logical color model."""
+        """Ensure the pixel format is compatible with the logical color model.
+
+        Raises
+        ------
+        ValueError
+            If the pixel format's color model does not match the configured color model.
+        """
         if self.pixel_format.color_model != self.color_model:
             msg = (
                 f"Incompatible {PixelFormat.__name__}: {self.pixel_format.name} uses {self.pixel_format.color_model}, "
@@ -249,9 +320,9 @@ class ImageSurfaceConfig(RasterSurfaceConfig):
 
 @dataclass(frozen=True)
 class SVGSurfaceConfig(VectorSurfaceConfig):
-    """Configuration for an SVG vector cairo surface.
+    """Configuration for an SVG vector surface.
 
-    Parameters
+    Attributes
     ----------
     document_unit
         SVG document unit for coordinates.
@@ -282,9 +353,9 @@ class SVGSurfaceConfig(VectorSurfaceConfig):
 
 @dataclass(frozen=True)
 class PDFSurfaceConfig(VectorSurfaceConfig):
-    """Configuration for a PDF vector cairo surface.
+    """Configuration for a PDF vector surface.
 
-    Parameters
+    Attributes
     ----------
     pdf_version
         PDF specification version.

@@ -30,11 +30,16 @@ from tenderness.layout_engines.minimal_flexbox.minimal_flexbox import MinimalFle
 class CaptionSpec:
     """Caption strip to attach above or below a layout node.
 
-    Args:
-        height:   Fixed pixel height of the caption strip.
-        gap:      Gap between the layout node and the caption strip.
-        on_top:   If True the caption appears above the layout; otherwise below.
-        name:     Name assigned to the caption leaf node.
+    Attributes
+    ----------
+    height
+        Fixed height of the caption strip; ``None`` lets it grow to fill remaining space.
+    gap
+        Gap between the layout node and the caption strip.
+    on_top
+        ``True`` when the caption appears above the layout node; ``False`` for below.
+    name
+        Name assigned to the caption leaf node.
     """
 
     height: float | None
@@ -50,10 +55,23 @@ class MinimalFlexBoxTemplateBase:
         return names[index] if names is not None else default
 
     def _wrap_with_caption(self, node: MinimalFlexNode, caption: CaptionSpec | None) -> MinimalFlexNode:
-        """Wrap *node* in a COLUMN container with a fixed-height caption strip.
+        """Wrap node in a COLUMN container with a caption strip.
 
         The wrapped node is made to stretch (flex_grow=1) so it fills the space not taken
-        by the caption. When *caption* is None the original node is returned unchanged.
+        by the caption.
+
+        Parameters
+        ----------
+        node
+            Layout node to wrap.
+        caption
+            Caption strip specification; returns node unchanged when ``None``.
+
+        Returns
+        -------
+        MinimalFlexNode
+            Original node when caption is ``None``, otherwise a new COLUMN container
+            with the caption strip and node as children.
         """
         if caption is None:
             return node

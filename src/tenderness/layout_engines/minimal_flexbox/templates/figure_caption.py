@@ -34,7 +34,10 @@ class MinimalFlexBoxTemplateFigureCaption(MinimalFlexBoxTemplateBase):
         caption_on_top: bool = False,
         names: list[str] | None = None,
     ) -> MinimalFlexNode:
-        """Caption is always fixed-height; figure always stretches. *caption_on_top* sets position.
+        """Stack a stretching figure and a caption strip in a COLUMN container.
+
+        The figure always stretches; the caption is fixed-height when ``caption_height``
+        is given, or stretches when ``None``.
 
         ::
 
@@ -45,7 +48,22 @@ class MinimalFlexBoxTemplateFigureCaption(MinimalFlexBoxTemplateBase):
             │  caption  │ ← caption_height  │  figure   │ ← stretch
             └───────────┘                   └───────────┘
 
-        Returns ``[top_rect, bottom_rect]`` in top-to-bottom order.
+        Parameters
+        ----------
+        caption_height
+            Fixed height of the caption strip; ``None`` lets it stretch.
+        gap
+            Gap between figure and caption.
+        caption_on_top
+            ``True`` places the caption above the figure; ``False`` places it below.
+        names
+            Two-element name list: ``names[0]`` → figure, ``names[1]`` → caption.
+            ``None`` uses generated defaults.
+
+        Returns
+        -------
+        MinimalFlexNode
+            Root COLUMN container with figure and caption as children.
         """
         figure_node = MinimalFlexNode(name=self._add_name(names, 0, "figure"))
         return self._wrap_with_caption(

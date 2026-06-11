@@ -10,6 +10,7 @@ hide:
 
 Development setup instructions for **tenderness**.
 
+
 ## Environment setup
 
 ```bash
@@ -33,8 +34,7 @@ uv pip list
 ```
 
 
-
-## pre-commit
+## [pre-commit](https://github.com/pre-commit/pre-commit)
 
 ```bash
 # Check pre-commit version
@@ -48,11 +48,50 @@ pre-commit run --all-files
 ```
 
 
-## mypy
+## [mypy](https://github.com/python/mypy)
 
 ```bash
 # Run mypy type checks
 uv run mypy
+```
+
+
+## [pytest](https://github.com/pytest-dev/pytest)
+
+```bash
+# Run all tests
+uv run pytest
+```
+
+## [pydoclint](https://github.com/jsh9/pydoclint)
+
+```bash
+# Run pydoclint on source
+uv run pydoclint src
+```
+
+
+## [tox](https://github.com/tox-dev/tox)
+
+
+```bash
+# Install tox globally with uv
+uv tool install tox --with tox-uv
+
+# Check tox version
+tox --version
+
+# Check available tox environments
+tox -l
+
+# Run all environments
+tox
+
+# Run all environments in parallel
+tox -p auto
+
+# Run a specific environment
+tox -e 3.13
 ```
 
 

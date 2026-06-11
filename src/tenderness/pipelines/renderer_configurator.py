@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Defines the ``RendererConfigurator`` class, which provides a high-level API for configuring and aggregating renderer functionality."""
+"""High-level API for configuring renderer components."""
 
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING
 
 import cairo
@@ -39,19 +38,16 @@ from tenderness.pango_backend.layout_context_interface import LayoutContextInter
 from tenderness.pango_backend.layout_interface import LayoutInterface
 
 gi.require_version("Pango", "1.0")
+gi.require_version("PangoCairo", "1.0")
 
+from gi.repository import Pango, PangoCairo  # noqa: E402
 
 if TYPE_CHECKING:
     import io
 
-    from gi.repository import Pango
-
     from tenderness.cairo_backend.surface_configuration import (
         SurfaceConfig,
     )
-
-
-logger = logging.getLogger(__name__)
 
 
 class RendererConfigurator:
@@ -83,7 +79,8 @@ class RendererConfigurator:
 
         Returns
         -------
-            A tuple containing the created ``cairo.Surface`` and an optional ``io.BytesIO`` buffer.
+        tuple[cairo.Surface, io.BytesIO | None]
+            Created surface and an optional ``io.BytesIO`` buffer.
         """
         return self.surface_creator.create_surface(surface_config=surface_config)
 
@@ -100,14 +97,14 @@ class RendererConfigurator:
 
         Returns
         -------
-            A ``cairo.Context`` associated with the given surface.
+        cairo.Context[cairo.Surface]
+            Context associated with the given surface.
         """
         context = cairo.Context(surface)
-        logger.debug("Created Cairo Context: %s", context)
-        return context
+        return context  # noqa: RET504
 
     # --------------------------
-    # Layout interface create (update via .update_*())
+    # Layout interface create
     # --------------------------
     def create_layout_interface_from_cairo_context(
         self,
@@ -125,7 +122,8 @@ class RendererConfigurator:
 
         Returns
         -------
-            A ``LayoutInterface`` associated with the given ``cairo.Context``.
+        LayoutInterface
+            ``LayoutInterface`` backed by the given ``cairo.Context``.
         """
         return LayoutInterface.from_cairo_context(cairo_context=cairo_context, name=name)
 
@@ -145,12 +143,13 @@ class RendererConfigurator:
 
         Returns
         -------
-            A ``LayoutInterface`` associated with the given ``Pango.Layout``.
+        LayoutInterface
+            ``LayoutInterface`` backed by the given ``Pango.Layout``.
         """
         return LayoutInterface(pango_layout=layout, name=name)
 
     # --------------------------
-    # FontDescription interface create (update via .update_*() , apply via .apply_to_*())
+    # FontDescription interface create
     # --------------------------
     def create_font_description_interface(
         self,
@@ -165,7 +164,8 @@ class RendererConfigurator:
 
         Returns
         -------
-            A ``FontDescriptionInterface`` associated with the new ``Pango.FontDescription``.
+        FontDescriptionInterface
+            ``FontDescriptionInterface`` backed by a new ``Pango.FontDescription``.
         """
         return FontDescriptionInterface.from_new(name=name)
 
@@ -185,7 +185,8 @@ class RendererConfigurator:
 
         Returns
         -------
-            A ``FontDescriptionInterface`` associated with the given string representation of a ``Pango.FontDescription``.
+        FontDescriptionInterface
+            ``FontDescriptionInterface`` backed by the given font description string.
         """
         return FontDescriptionInterface.from_string(font_desc_str=font_desc_str, name=name)
 
@@ -205,12 +206,13 @@ class RendererConfigurator:
 
         Returns
         -------
-            A ``FontDescriptionInterface`` associated with the given ``Pango.FontDescription``.
+        FontDescriptionInterface
+            ``FontDescriptionInterface`` backed by the given ``Pango.FontDescription``.
         """
         return FontDescriptionInterface(font_description=font_description, name=name)
 
     # --------------------------
-    # LayoutContext interface create (update via .update_*())
+    # LayoutContext interface create
     # --------------------------
     def create_layout_context_interface_from_layout_interface(
         self,
@@ -228,7 +230,8 @@ class RendererConfigurator:
 
         Returns
         -------
-            A ``LayoutContextInterface`` associated with the given ``LayoutInterface``.
+        LayoutContextInterface
+            ``LayoutContextInterface`` backed by the given ``LayoutInterface``.
         """
         return LayoutContextInterface.from_layout_interface(layout_interface=layout_interface, name=name)
 
@@ -248,7 +251,8 @@ class RendererConfigurator:
 
         Returns
         -------
-            A ``LayoutContextInterface`` associated with the given ``Pango.Layout``.
+        LayoutContextInterface
+            ``LayoutContextInterface`` backed by the given ``Pango.Layout``.
         """
         return LayoutContextInterface.from_pango_layout(pango_layout=pango_layout, name=name)
 
@@ -268,7 +272,8 @@ class RendererConfigurator:
 
         Returns
         -------
-            A ``LayoutContextInterface`` associated with the given ``Pango.Context``.
+        LayoutContextInterface
+            ``LayoutContextInterface`` backed by the given ``Pango.Context``.
         """
         return LayoutContextInterface(pango_context=pango_context, name=name)
 
@@ -285,7 +290,8 @@ class RendererConfigurator:
 
         Returns
         -------
-            A ``FontOptionsInterface`` associated with a new ``Pango.FontOptions``.
+        FontOptionsInterface
+            ``FontOptionsInterface`` backed by a new default font options object.
         """
         return FontOptionsInterface.from_new(name=name)
 
@@ -308,7 +314,8 @@ class RendererConfigurator:
 
         Returns
         -------
-            A ``CairoContextTransformPipeline`` associated with the given ``cairo.Context``.
+        CairoContextTransformPipeline
+            ``CairoContextTransformPipeline`` backed by the given ``cairo.Context``.
         """
         return CairoContextTransformPipeline.from_cairo_context(cairo_context=cairo_context, name=name)
 
@@ -328,6 +335,20 @@ class RendererConfigurator:
 
         Returns
         -------
-            A ``CairoContextTransformPipeline`` associated with the given ``cairo.Matrix``.
+        CairoContextTransformPipeline
+            ``CairoContextTransformPipeline`` backed by the given ``cairo.Matrix``.
         """
         return CairoContextTransformPipeline(matrix=matrix, name=name)
+
+    def show_layout(self, cairo_context: cairo.Context[cairo.Surface], pango_layout: Pango.Layout) -> None:
+        """
+        Render a Pango layout onto a Cairo context.
+
+        Parameters
+        ----------
+        cairo_context
+            The Cairo context on which the layout will be drawn.
+        pango_layout
+            The Pango layout containing the text and formatting to render.
+        """
+        PangoCairo.show_layout(cairo_context, pango_layout)

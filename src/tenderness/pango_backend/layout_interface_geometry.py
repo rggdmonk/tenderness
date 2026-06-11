@@ -30,14 +30,43 @@ from gi.repository import Pango  # noqa: E402, TC002
 
 
 @unique
-class ExtentsMode(StrEnum):  # noqa: D101 TODO: docstring
+class ExtentsMode(StrEnum):
+    """Mode selecting ink or logical extents.
+
+    Attributes
+    ----------
+    INK
+        Ink extents.
+    LOGICAL
+        Logical extents.
+    """
+
     INK = auto()
     LOGICAL = auto()
 
 
-class LayoutRect(Rectangle):  # noqa: D101 TODO: docstring
+class LayoutRect(Rectangle):
+    """Rectangle derived from a Pango layout extent."""
+
     @classmethod
-    def from_pango_rectangle(cls, rect: Pango.Rectangle) -> Self:  # noqa: D102 TODO: docstring
+    def from_pango_rectangle(cls, rect: Pango.Rectangle) -> Self:
+        """Create from a Pango rectangle.
+
+        Parameters
+        ----------
+        rect
+            Pango rectangle to convert.
+
+        Returns
+        -------
+        Self
+            ``LayoutRect`` with the same position and dimensions.
+
+        Raises
+        ------
+        ValueError
+            If ``rect.width`` or ``rect.height`` is negative.
+        """
         if rect.width < 0 or rect.height < 0:
             msg = f"Invalid Pango rectangle dimensions: width={rect.width}, height={rect.height}"
             raise ValueError(msg)
@@ -49,7 +78,13 @@ class LayoutRect(Rectangle):  # noqa: D101 TODO: docstring
 # ------------------------------------------------------------------
 @dataclass(frozen=True, slots=True)
 class WidthDeviceUnits:
-    """Width expressed as device units. Maps to Pango width > 0."""
+    """Width constraint in device units. Maps to Pango width > 0.
+
+    Attributes
+    ----------
+    width
+        Width in device units; must be positive.
+    """
 
     width: float
 
@@ -64,13 +99,12 @@ class WidthUnconstrained:
 # ------------------------------------------------------------------
 @dataclass(frozen=True, slots=True)
 class HeightLineLimit:
-    """
-    Max lines per paragraph. Maps to Pango height `< 0`.
+    """Max lines per paragraph. Maps to Pango height < 0.
 
     Attributes
     ----------
-        lines: Number of lines; stored as positive, Pango receives negated.
-            Default Pango value of `-1` maps to `lines=1`.
+    lines
+        Maximum lines per paragraph; stored as positive, Pango receives negated.
     """
 
     lines: int
@@ -78,17 +112,17 @@ class HeightLineLimit:
 
 @dataclass(frozen=True, slots=True)
 class HeightSingleLine:
-    """Exactly one line regardless of content. Maps to Pango height `= 0`."""
+    """Exactly one line regardless of content. Maps to Pango height = 0."""
 
 
 @dataclass(frozen=True, slots=True)
 class HeightDeviceUnits:
-    """
-    Max height in device units. Maps to Pango height `> 0`.
+    """Max height in device units. Maps to Pango height > 0.
 
     Attributes
     ----------
-        height: Height in device units; always positive.
+    height
+        Maximum height in device units; must be positive.
     """
 
     height: float
@@ -99,7 +133,31 @@ type HeightConstraint = HeightDeviceUnits | HeightLineLimit | HeightSingleLine
 
 
 @dataclass(frozen=True, slots=True)
-class FitsResult:  # noqa: D101 TODO: docstring
+class FitsResult:
+    """Fitting result for a single extents mode.
+
+    Attributes
+    ----------
+    extents_mode
+        Ink or logical extents mode used for this result.
+    width
+        ``True`` if the content fits within the width constraint.
+    height
+        ``True`` if the content fits within the height constraint.
+    ellipsis
+        Ellipsization mode active on the layout.
+    wrap
+        Wrap mode active on the layout.
+    rect
+        Bounding rectangle of the content.
+    width_device_units
+        Width constraint used for evaluation.
+    height_device_units
+        Height constraint used for evaluation.
+    unknown_glyphs_count
+        Number of glyphs that could not be rendered.
+    """
+
     extents_mode: ExtentsMode
     width: bool
     height: bool
@@ -111,21 +169,31 @@ class FitsResult:  # noqa: D101 TODO: docstring
     unknown_glyphs_count: int
 
     @property
-    def fit_both(self) -> bool:  # noqa: D102 TODO: docstring
+    def fit_both(self) -> bool:
+        """True if both width and height fit within the constraint.
+
+        Returns
+        -------
+        bool
+            ``True`` if both ``width`` and ``height`` are ``True``.
+        """
         return self.width and self.height
 
 
 @dataclass(frozen=True, slots=True)
 class ClippedText:
-    """
-    Text that was not rendered due to layout constraints.
+    """Text that was not rendered due to layout constraints.
 
     Attributes
     ----------
-        visible: The portion of text that was rendered.
-        clipped: The portion of text that was clipped or ellipsized.
-        last_visible_line: Index of the last rendered line (zero-based).
-        clipped_char_index: Byte index into the full text where clipping began.
+    visible
+        Portion of text that was rendered.
+    clipped
+        Portion of text that was clipped or ellipsized.
+    last_visible_line
+        Index of the last rendered line (zero-based).
+    clipped_char_byte_index
+        Byte index into the full text where clipping began.
     """
 
     visible: str
@@ -135,20 +203,28 @@ class ClippedText:
 
     @property
     def has_clipped(self) -> bool:
-        """True if any text was not rendered."""
+        """True if any text was not rendered.
+
+        Returns
+        -------
+        bool
+            ``True`` if ``clipped`` is non-empty.
+        """
         return bool(self.clipped)
 
 
 @dataclass(frozen=True, slots=True)
 class LayoutFitReport:
-    """
-    Combined fitting and clipping result from a single iterator pass.
+    """Combined fitting and clipping result from a single iterator pass.
 
     Attributes
     ----------
-        fits_logical: Fitting result based on logical extents.
-        fits_ink: Fitting result based on ink extents.
-        clipped_text: Visible and clipped text portions.
+    fits_logical
+        Fitting result based on logical extents.
+    fits_ink
+        Fitting result based on ink extents.
+    clipped_text
+        Visible and clipped text portions.
     """
 
     fits_logical: FitsResult

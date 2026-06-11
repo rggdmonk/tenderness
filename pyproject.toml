@@ -3,33 +3,53 @@
 # ============================================================================
 [project]
 name = "tenderness"
-description = "Library for text rendering"
+description = "Text rendering library for synthetic data generation"
 readme = "README.md"
+license = "Apache-2.0"
 license-files = ["LICEN[CS]E*", "NOTICE*"]
 authors = [{ name = "Pavel Stepachev" }]
 classifiers = [
   "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: Apache Software License",
-  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Topic :: Scientific/Engineering :: Image Processing",
-  "Topic :: Scientific/Engineering :: Image Recognition",
+  "Topic :: Text Processing"
 ]
 
 keywords = [
-  "document",
-  "images",
-  "layout",
+  "OCR",
+  "computer vision",
+  "deep learning",
+  "document generation",
+  "document segmentation",
+  "document understanding",
+  "evaluation data",
+  "image generation",
   "machine learning",
-  "rendering",
-  "synthetic",
-  "text",
-  "typography"
+  "mid-training data",
+  "multimodal",
+  "multimodal data",
+  "multimodal machine learning",
+  "natural language processing",
+  "pdf generation",
+  "post-training data",
+  "pre-training data",
+  "svg generation",
+  "synthetic data",
+  "synthetic documents",
+  "text rendering",
+  "typography",
+  "vision and language",
+  "vision language models",
 ]
 
 version = "0.1.0"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 
 # ============================================================================
 # Dependencies
@@ -56,9 +76,9 @@ dev = [
   { include-group = "tools" },
   { include-group = "typing" }
 ]
-docs = ["zensical==0.0.37"]
-lint = ["ruff"]
-test = ["coverage", "pytest >= 9.0"]
+docs = ["zensical==0.0.43"]
+lint = ["pydoclint==0.8.6", "ruff"]
+test = ["coverage", "pytest >= 9.0", "pytest-order"]
 tools = ["pre-commit"]
 typing = ["mypy", "pygobject-stubs", "types-requests"]
 
@@ -68,3 +88,33 @@ typing = ["mypy", "pygobject-stubs", "types-requests"]
 [build-system]
 requires = ["uv_build>=0.11.4,<0.12.0"]
 build-backend = "uv_build"
+
+# ============================================================================
+# Pydoclint
+# ============================================================================
+[tool.pydoclint]
+style = "numpy"
+exclude = "^tests/.*"
+
+arg-type-hints-in-docstring = false
+arg-type-hints-in-signature = true
+check-arg-order = true
+skip-checking-short-docstrings = false
+skip-checking-raises = false
+skip-checking-private-functions = false
+allow-init-docstring = true
+require-return-section-when-returning-nothing = false
+check-return-types = true
+require-yield-section-when-yielding-nothing = true
+check-yield-types = true
+ignore-underscore-args = true
+ignore-private-args = false
+check-class-attributes = true
+should-document-private-class-attributes = false
+treat-property-methods-as-class-attributes = false
+only-attrs-with-ClassVar-are-treated-as-class-attrs = false
+require-inline-class-var-docs = false
+should-document-star-arguments = true
+omit-stars-when-documenting-varargs = false
+check-style-mismatch = true
+check-arg-defaults = false

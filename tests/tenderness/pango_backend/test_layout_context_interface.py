@@ -14,17 +14,20 @@
 
 from __future__ import annotations
 
+import cairo
 import gi
 import pytest
 
 from tenderness.core.sentinel import _UNSET_PARAM
 from tenderness.pango_backend.layout_context_interface import (
+    LayoutContextInterface,
     LayoutContextInterfaceParameters,
 )
 
 gi.require_version("Pango", "1.0")
+gi.require_version("PangoCairo", "1.0")
 
-from gi.repository import Pango  # noqa: E402
+from gi.repository import Pango, PangoCairo  # noqa: E402
 
 
 # --------------------------
@@ -90,3 +93,53 @@ class TestLayoutContextInterfaceParametersUpdateParameters:
             assert "base_gravity" in params._set_params
             assert "round_glyph_positions" in params._set_params
         assert params.gravity_hint == Pango.GravityHint.NATURAL
+
+
+# --------------------------
+# Tests for LayoutContextInterface.resolution
+# --------------------------
+class TestLayoutContextInterfaceResolution:
+    @pytest.fixture
+    def ctx(self) -> LayoutContextInterface:
+        surface = cairo.ImageSurface(cairo.Format.RGB24, 64, 64)
+        cr = cairo.Context(surface)
+        pango_layout = PangoCairo.create_layout(cr)
+        return LayoutContextInterface.from_pango_layout(pango_layout)
+
+    def test_default_is_negative(self, ctx: LayoutContextInterface) -> None:
+        assert ctx.resolution < 0
+
+    def test_getter_returns_float(self, ctx: LayoutContextInterface) -> None:
+        assert isinstance(ctx.resolution, float)
+
+    def test_set_and_get_roundtrip(self, ctx: LayoutContextInterface) -> None:
+        ctx.resolution = 96.0
+        assert ctx.resolution == 96.0
+
+    def test_set_custom_dpi(self, ctx: LayoutContextInterface) -> None:
+        ctx.resolution = 144.0
+        assert ctx.resolution == 144.0
+
+    def test_restore_inherit_via_negative(self, ctx: LayoutContextInterface) -> None:
+        ctx.resolution = 144.0
+        ctx.resolution = -1.0
+        assert ctx.resolution < 0
+
+    def test_update_with_parameters_applies_resolution(self, ctx: LayoutContextInterface) -> None:
+        params = LayoutContextInterfaceParameters(resolution=72.0)
+        ctx.update_with_parameters(params)
+        assert ctx.resolution == 72.0
+
+    def test_update_with_parameters_unset_leaves_resolution_unchanged(self, ctx: LayoutContextInterface) -> None:
+        ctx.resolution = 96.0
+        ctx.update_with_parameters(LayoutContextInterfaceParameters())
+        assert ctx.resolution == 96.0
+
+    def test_resolution_in_set_params(self) -> None:
+        params = LayoutContextInterfaceParameters(resolution=144.0)
+        assert "resolution" in params._set_params
+        assert params._set_params["resolution"] == 144.0
+
+    def test_resolution_absent_from_set_params_when_unset(self) -> None:
+        params = LayoutContextInterfaceParameters()
+        assert "resolution" not in params._set_params

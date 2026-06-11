@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Cairo font options interface."""
+"""Font options interface."""
 
 from __future__ import annotations
 
@@ -45,9 +45,9 @@ if TYPE_CHECKING:
 
 @dataclass(slots=True, frozen=True)
 class FontOptionsInterfaceParameters(BaseInterfaceParameters):
-    """Parameters for configuring a FontOptionsInterface.
+    """Configuration parameters for FontOptionsInterface.
 
-    Parameters
+    Attributes
     ----------
     antialias
         Antialiasing mode.
@@ -88,34 +88,53 @@ class FontOptionsInterfaceParameters(BaseInterfaceParameters):
 
 
 class FontOptionsInterface(BaseInterface):
-    """Wrapper around cairo.FontOptions controlling font rendering quality.
+    """Interface for font options.
 
     Controls antialiasing, hinting, subpixel order, and color mode —
     not which font is used.
 
-    Parameters
-    ----------
-    font_options
-        Font options object to wrap.
-    name
-        Optional label for the interface instance.
-
     Notes
     -----
-    https://pycairo.readthedocs.io/en/latest/reference/text.html#class-fontoptions
+    See: https://pycairo.readthedocs.io/en/latest/reference/text.html#class-fontoptions
     """
 
     def __init__(self, font_options: cairo.FontOptions, name: str = "") -> None:
+        """Initialize the font options interface.
+
+        Parameters
+        ----------
+        font_options
+            Underlying cairo font options object.
+        name
+            Optional label for the interface instance.
+        """
         super().__init__(name=name)
         self.font_options = font_options
 
     @classmethod
     def from_new(cls, name: str = "") -> FontOptionsInterface:
-        """Construct a font options interface with default cairo.FontOptions."""
+        """Create a font options interface with default cairo.FontOptions.
+
+        Parameters
+        ----------
+        name
+            Optional label for the interface instance.
+
+        Returns
+        -------
+        FontOptionsInterface
+            ``FontOptionsInterface`` backed by a new default font options object.
+        """
         return cls(font_options=cairo.FontOptions(), name=name)
 
     def apply_to_layout_interface(self, layout_interface: LayoutInterface) -> None:
-        """Apply the font options to a Pango layout interface."""
+        """Apply the font options to a Pango layout interface.
+
+        Parameters
+        ----------
+        layout_interface
+            Layout interface to apply the font options to.
+        """
         PangoCairo.context_set_font_options(
             layout_interface.pango_layout.get_context(),
             self.font_options,
@@ -126,65 +145,156 @@ class FontOptionsInterface(BaseInterface):
     # ------------------------------------------------------------------
     @property
     def antialias(self) -> cairo.Antialias:
-        """Antialiasing mode."""
+        """Antialiasing mode.
+
+        Returns
+        -------
+        cairo.Antialias
+            Current antialiasing mode.
+        """
         return self.font_options.get_antialias()
 
     @antialias.setter
     def antialias(self, antialias: cairo.Antialias) -> None:
+        """Set the antialiasing mode.
+
+        Parameters
+        ----------
+        antialias
+            Antialiasing mode to apply.
+        """
         self.font_options.set_antialias(antialias)
 
     @property
     def hint_style(self) -> cairo.HintStyle:
-        """Hinting style."""
+        """Hinting style.
+
+        Returns
+        -------
+        cairo.HintStyle
+            Current hinting style.
+        """
         return self.font_options.get_hint_style()
 
     @hint_style.setter
     def hint_style(self, hint_style: cairo.HintStyle) -> None:
+        """Set the hinting style.
+
+        Parameters
+        ----------
+        hint_style
+            Hinting style to apply.
+        """
         self.font_options.set_hint_style(hint_style)
 
     @property
     def subpixel_order(self) -> cairo.SubpixelOrder:
-        """Subpixel rendering order."""
+        """Subpixel rendering order.
+
+        Returns
+        -------
+        cairo.SubpixelOrder
+            Current subpixel rendering order.
+        """
         return self.font_options.get_subpixel_order()
 
     @subpixel_order.setter
     def subpixel_order(self, subpixel_order: cairo.SubpixelOrder) -> None:
+        """Set the subpixel rendering order.
+
+        Parameters
+        ----------
+        subpixel_order
+            Subpixel order to apply.
+        """
         self.font_options.set_subpixel_order(subpixel_order)
 
     @property
     def hint_metrics(self) -> cairo.HintMetrics:
-        """Hinting metrics mode."""
+        """Hinting metrics mode.
+
+        Returns
+        -------
+        cairo.HintMetrics
+            Current hinting metrics mode.
+        """
         return self.font_options.get_hint_metrics()
 
     @hint_metrics.setter
     def hint_metrics(self, hint_metrics: cairo.HintMetrics) -> None:
+        """Set the hinting metrics mode.
+
+        Parameters
+        ----------
+        hint_metrics
+            Hinting metrics mode to apply.
+        """
         self.font_options.set_hint_metrics(hint_metrics)
 
     @property
     def variations(self) -> str:
-        """Font variations string."""
+        """Font variations string.
+
+        Returns
+        -------
+        str
+            Current font variations string.
+        """
         return self.font_options.get_variations()
 
     @variations.setter
     def variations(self, variations: str | None) -> None:
+        """Set the font variations string.
+
+        Parameters
+        ----------
+        variations
+            Variations string to apply, or ``None`` to clear.
+        """
         self.font_options.set_variations(variations)
 
     @property
     def color_mode(self) -> cairo.ColorMode:
-        """Color rendering mode."""
+        """Color rendering mode.
+
+        Returns
+        -------
+        cairo.ColorMode
+            Current color rendering mode.
+        """
         return self.font_options.get_color_mode()
 
     @color_mode.setter
     def color_mode(self, color_mode: cairo.ColorMode) -> None:
+        """Set the color rendering mode.
+
+        Parameters
+        ----------
+        color_mode
+            Color mode to apply.
+        """
         self.font_options.set_color_mode(color_mode)
 
     @property
     def color_palette(self) -> int:
-        """Active color palette index."""
+        """Active color palette index.
+
+        Returns
+        -------
+        int
+            Current active color palette index.
+        """
         return self.font_options.get_color_palette()
 
     @color_palette.setter
     def color_palette(self, palette_index: int) -> None:
+        """Set the active color palette index.
+
+        Parameters
+        ----------
+        palette_index
+            Palette index to activate.
+        """
         self.font_options.set_color_palette(palette_index)
 
     # ------------------------------------------------------------------
@@ -192,22 +302,51 @@ class FontOptionsInterface(BaseInterface):
     # ------------------------------------------------------------------
     @property
     def hash(self) -> int:
-        """Hash value of the font options."""
+        """Hash value of the font options.
+
+        Returns
+        -------
+        int
+            Hash value of the font options.
+        """
         return self.font_options.hash()
 
     # ------------------------------------------------------------------
     # Methods
     # ------------------------------------------------------------------
     def merge(self, other: cairo.FontOptions) -> None:
-        """Merge another font options object into this one."""
+        """Merge another font options object into this one.
+
+        Parameters
+        ----------
+        other
+            Font options object to merge in.
+        """
         self.font_options.merge(other)
 
     def copy(self) -> cairo.FontOptions:
-        """Return a copy of the underlying font options."""
+        """Return a copy of the underlying font options.
+
+        Returns
+        -------
+        cairo.FontOptions
+            Copy of the underlying font options object.
+        """
         return self.font_options.copy()
 
     def equal(self, other: cairo.FontOptions) -> bool:
-        """Return whether this font options equals another."""
+        """Return True if this font options equals another.
+
+        Parameters
+        ----------
+        other
+            Font options object to compare against.
+
+        Returns
+        -------
+        bool
+            ``True`` if both font options objects are equal.
+        """
         return self.font_options.equal(other)
 
     def get_custom_palette_color(self, index: int) -> tuple[float, float, float, float]:
@@ -220,8 +359,14 @@ class FontOptionsInterface(BaseInterface):
 
         Returns
         -------
-        tuple
-            Color components as ``(red, green, blue, alpha)``.
+        float
+            Red component.
+        float
+            Green component.
+        float
+            Blue component.
+        float
+            Alpha component.
         """
         return self.font_options.get_custom_palette_color(index)
 

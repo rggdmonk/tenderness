@@ -1,2 +1,19 @@
 tenderness
 Copyright 2026- Pavel Stepachev
+
+---
+
+This software depends on the following third-party libraries:
+
+pycairo (https://github.com/pygobject/pycairo)
+  Copyright (C) the pycairo authors
+  Licensed under LGPL-2.1-only OR MPL-1.1
+  https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+PyGObject (https://pygobject.gnome.org/)
+  Copyright (C) the PyGObject authors
+  Licensed under LGPL-2.1-or-later
+  https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+These libraries are not modified or bundled — they are runtime dependencies
+installed separately. Users may replace them with compatible versions.

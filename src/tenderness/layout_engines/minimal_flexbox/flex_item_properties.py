@@ -22,7 +22,21 @@ from enum import StrEnum, auto, unique
 
 @unique
 class AlignSelf(StrEnum):
-    """Per-item cross-axis alignment override."""
+    """Per-item cross-axis alignment override.
+
+    Attributes
+    ----------
+    AUTO
+        Inherits ``align-items`` from the container.
+    STRETCH
+        Fills the line's cross size; may distort items with a fixed intrinsic aspect ratio.
+    FLEX_START
+        Aligns to the cross-start edge of the line.
+    FLEX_END
+        Aligns to the cross-end edge of the line.
+    CENTER
+        Centers the item within the line's cross size.
+    """
 
     AUTO = auto()  # default — inherits align-items from the container
     STRETCH = auto()  # fills the line's cross size; use FLEX_START/CENTER to preserve intrinsic aspect ratio
@@ -37,7 +51,7 @@ class AlignSelf(StrEnum):
 class FlexItemProperties:
     """Per-item flex properties for MinimalFlexBox layout.
 
-    Parameters
+    Attributes
     ----------
     order
         Render order; lower values appear first.

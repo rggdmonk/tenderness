@@ -41,17 +41,37 @@ logger = logging.getLogger(__name__)
 
 @unique
 class FontconfigMode(StrEnum):
-    """Fontconfig setup strategies."""
+    """Fontconfig setup strategies.
 
-    FROM_FILE = auto()  # use existing fontconfig file without modifications
-    SYSTEM_COPY = auto()  # use system fontconfig
-    SYSTEM_EXTENDED = auto()  # use system fontconfig with custom font directory
-    SYSTEM_ISOLATED = auto()  # use system fontconfig with custom font directory and no system fonts
-    TEMPLATE_MINIMAL = auto()  # use template (minimal) fontconfig only with custom font directory
+    Attributes
+    ----------
+    FROM_FILE
+        Use an existing fontconfig file without modifications.
+    SYSTEM_COPY
+        Copy and use the system fontconfig as-is.
+    SYSTEM_EXTENDED
+        Use system fontconfig with an added custom font directory.
+    SYSTEM_ISOLATED
+        Use system fontconfig with a custom font directory and system fonts removed.
+    TEMPLATE_MINIMAL
+        Use a minimal template fontconfig with only the custom font directory.
+    """
+
+    FROM_FILE = auto()
+    SYSTEM_COPY = auto()
+    SYSTEM_EXTENDED = auto()
+    SYSTEM_ISOLATED = auto()
+    TEMPLATE_MINIMAL = auto()
 
 
 class BaseFontconfigManager(ABC):
-    """Base class for fontconfig file operations."""
+    """Base class for fontconfig file operations.
+
+    Attributes
+    ----------
+    fontconfig_extension
+        File extension for fontconfig files.
+    """
 
     fontconfig_extension: ClassVar[str] = ".conf"
 
@@ -121,7 +141,23 @@ class BaseFontconfigManager(ABC):
         return tree
 
     def load_fontconfig_file_from_path(self, fontconfig_path: pathlib.Path) -> pathlib.Path:
-        """Load existing fontconfig file from the specified path."""
+        """Load existing fontconfig file from the specified path.
+
+        Parameters
+        ----------
+        fontconfig_path
+            Path to an existing ``.conf`` file.
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved absolute path to the fontconfig file.
+
+        Raises
+        ------
+        ValueError
+            If the file contains invalid XML or an unexpected root element.
+        """
         result_path = fontconfig_path.resolve()
         self._validate_conf_file_existence(file_path=result_path)
 
@@ -140,7 +176,20 @@ class BaseFontconfigManager(ABC):
     def copy_fontconfig_file(
         self, fontconfig_source_path: pathlib.Path, fontconfig_destination_dir: pathlib.Path
     ) -> pathlib.Path:
-        """Copy fontconfig file from source to output directory."""
+        """Copy fontconfig file from source to output directory.
+
+        Parameters
+        ----------
+        fontconfig_source_path
+            Path to the source ``.conf`` file.
+        fontconfig_destination_dir
+            Directory where the copy will be written.
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved path to the copied fontconfig file.
+        """
         logger.debug("Copying fontconfig file from %s to %s", fontconfig_source_path, fontconfig_destination_dir)
 
         fontconfig_source_path = fontconfig_source_path.resolve()
@@ -157,7 +206,20 @@ class BaseFontconfigManager(ABC):
         return result_path
 
     def add_font_directory(self, fontconfig_path: pathlib.Path, font_dir: pathlib.Path) -> pathlib.Path:
-        """Add custom font directory to the fontconfig file."""
+        """Add custom font directory to the fontconfig file.
+
+        Parameters
+        ----------
+        fontconfig_path
+            Path to the source ``.conf`` file to extend.
+        font_dir
+            Directory to add as a font source.
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved path to the new fontconfig file.
+        """
         fontconfig_path = fontconfig_path.resolve()
         self._validate_conf_file_existence(file_path=fontconfig_path)
         font_dir = font_dir.resolve()
@@ -178,7 +240,20 @@ class BaseFontconfigManager(ABC):
     def add_font_directory_and_remove_system(
         self, fontconfig_path: pathlib.Path, font_dir: pathlib.Path
     ) -> pathlib.Path:
-        """Add custom font directory and remove system fonts."""
+        """Add custom font directory and remove system fonts.
+
+        Parameters
+        ----------
+        fontconfig_path
+            Path to the source ``.conf`` file to modify.
+        font_dir
+            Directory to add as a font source.
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved path to the new fontconfig file.
+        """
         fontconfig_path = fontconfig_path.resolve()
         self._validate_conf_file_existence(file_path=fontconfig_path)
         font_dir = font_dir.resolve()
@@ -201,7 +276,27 @@ class BaseFontconfigManager(ABC):
     def create_fontconfig_from_template(
         self, font_dir: pathlib.Path, fontconfig_output_dir: pathlib.Path, mode: FontconfigMode
     ) -> pathlib.Path:
-        """Create fontconfig file from a predefined template."""
+        """Create fontconfig file from a predefined template.
+
+        Parameters
+        ----------
+        font_dir
+            Directory to register as a font source in the generated config.
+        fontconfig_output_dir
+            Directory where the generated ``.conf`` file will be written.
+        mode
+            Template mode selecting the config template to use.
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved path to the generated fontconfig file.
+
+        Raises
+        ------
+        ValueError
+            If ``mode`` has no associated template.
+        """
         font_dir = font_dir.resolve()
         fontconfig_output_dir = fontconfig_output_dir.resolve()
 

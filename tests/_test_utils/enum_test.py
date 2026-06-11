@@ -19,7 +19,7 @@ from enum import Enum
 
 import pytest
 
-from tests._test_utils.helpers import _is_classmethod_defined_on, _is_method_defined_on
+from tests._test_utils.eternal_contracts_helpers import _is_classmethod_defined_on, _is_method_defined_on
 
 
 @dataclass(slots=True, frozen=True)

@@ -14,9 +14,24 @@ Copyright &copy; 2026 Pavel Stepachev
 nav = [
   { "Home" = "index.md" },
   { "Overview" = "overview.md" },
-  { "Setup" = ["setup/install.md", "setup/development.md"] },
-  { "Usage" = ["usage/examples.md", "usage/bboxes.md"] },
-  { "API Reference" = "api_reference/api_reference.md" },
+  { "Setup" = [
+    "setup/install.md",
+    "setup/development.md",
+  ] },
+  { "Basics" = [
+    { "Core concepts" = [
+      "basics/core-concepts/text-bboxes.md",
+    ] },
+  ] },
+
+  { "Examples" = [
+    { "Examples" = [
+      "examples/document-pipeline-examples.md",
+    ] },
+  ] },
+  { "API Reference" = [
+    "api-reference.md",
+  ] },
 ]
 
 extra_css = ["stylesheets/extra.css"]

@@ -20,7 +20,7 @@ from dataclasses import dataclass, field, is_dataclass
 
 import pytest
 
-from tests._test_utils.helpers import (
+from tests._test_utils.eternal_contracts_helpers import (
     _dataclass_generated_methods,
     _is_classmethod_defined_on,
     _is_method_defined_on,

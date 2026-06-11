@@ -29,7 +29,19 @@ if TYPE_CHECKING:
 
 @unique
 class DashStyle(StrEnum):
-    """Dash pattern for stroked lines."""
+    """Dash pattern for stroked lines.
+
+    Attributes
+    ----------
+    SOLID
+        Continuous unbroken line.
+    DASHED
+        Alternating long dashes and gaps.
+    DOTTED
+        Closely spaced round dots.
+    DASH_DOT
+        Alternating dash and dot pattern.
+    """
 
     SOLID = auto()
     DASHED = auto()
@@ -39,16 +51,16 @@ class DashStyle(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class StrokeStyle:
-    """Stroke style parameters for a cairo path.
+    """Stroke style parameters for a path.
 
-    Parameters
+    Attributes
     ----------
     line_width
         Width of the stroke in device units.
     line_cap
-        Line cap style; uses cairo default when ``None``.
+        Line cap style; uses the context default when ``None``.
     line_join
-        Line join style; uses cairo default when ``None``.
+        Line join style; uses the context default when ``None``.
     dash_style
         Dash pattern style for the stroke.
     """

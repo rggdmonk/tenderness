@@ -34,7 +34,21 @@ type RGBAColor = tuple[float, float, float, float]
 
 @dataclass(frozen=True, slots=True)
 class Color:
-    """Color value with hex, RGB, and RGBA representations."""
+    """Color value with hex, RGB, and RGBA representations.
+
+    Attributes
+    ----------
+    color_name
+        Name of the color.
+    color_group_name
+        Name of the palette group.
+    hex
+        Hex color string, e.g. ``"#1f77b4"``.
+    rgb
+        RGB tuple with values in ``[0, 1]``.
+    rgba
+        RGBA tuple with values in ``[0, 1]``.
+    """
 
     color_name: ColorName
     color_group_name: ColorGroupName
@@ -57,7 +71,7 @@ class Color:
 
         Returns
         -------
-        Color
+        Self
             Fully populated Color instance.
         """
         return cls(
@@ -73,6 +87,15 @@ class ColorGroup:
     """A named collection of colors loaded from a name-to-hex mapping."""
 
     def __init__(self, color_group_name: ColorGroupName, source: dict[ColorName, HexColor]) -> None:
+        """Initialize the color group.
+
+        Parameters
+        ----------
+        color_group_name
+            Name of the palette group.
+        source
+            Mapping of color name to hex color string.
+        """
         self.color_group_name = color_group_name
         self._colors: dict[ColorName, Color] = {
             color_name: Color.from_hex(
@@ -82,11 +105,28 @@ class ColorGroup:
         }
 
     def __len__(self) -> int:
-        """Return the number of colors in the group."""
+        """Return the number of colors in the group.
+
+        Returns
+        -------
+        int
+            Number of colors in the group.
+        """
         return len(self._colors)
 
     def __contains__(self, color_name: ColorName) -> bool:
-        """Check whether a color name exists in the group."""
+        """Check if a color name exists in the group.
+
+        Parameters
+        ----------
+        color_name
+            Name of the color to check.
+
+        Returns
+        -------
+        bool
+            ``True`` if the color name is present in the group.
+        """
         return color_name in self._colors
 
     def get_color_by_name(self, color_name: ColorName) -> Color:
@@ -113,7 +153,13 @@ class ColorGroup:
         return self._colors[color_name]
 
     def all_names(self) -> list[ColorName]:
-        """Return all color names in the group."""
+        """Return all color names in the group.
+
+        Returns
+        -------
+        list[ColorName]
+            All color names in the group.
+        """
         return list(self._colors.keys())
 
 
@@ -133,7 +179,13 @@ class ColorRegistry:
         }
 
     def group_names(self) -> list[ColorGroupName]:
-        """Return the names of all registered groups."""
+        """Return the names of all registered groups.
+
+        Returns
+        -------
+        list[ColorGroupName]
+            Names of all registered groups.
+        """
         return list(self._groups.keys())
 
     def get_group(self, color_group_name: ColorGroupName) -> ColorGroup:
@@ -177,7 +229,13 @@ class ColorRegistry:
         return self.get_group(color_group_name=color_group_name).get_color_by_name(color_name=color_name)
 
     def total_colors(self) -> dict[ColorGroupName, int]:
-        """Return the color count per group."""
+        """Return the color count per group.
+
+        Returns
+        -------
+        dict[ColorGroupName, int]
+            Mapping of group name to color count.
+        """
         return {name: len(group) for name, group in self._groups.items()}
 
 
@@ -185,6 +243,13 @@ class ColorSelector:
     """High-level interface for selecting colors from the registry."""
 
     def __init__(self, color_registry: ColorRegistry | None = None) -> None:
+        """Initialize the color selector.
+
+        Parameters
+        ----------
+        color_registry
+            Registry to use; defaults to a new ``ColorRegistry`` instance.
+        """
         self.color_registry = color_registry or ColorRegistry()
 
     def by_names(self, color_names: list[ColorName], color_group_name: ColorGroupName = "CSS4") -> list[Color]:
@@ -199,7 +264,7 @@ class ColorSelector:
 
         Returns
         -------
-        list
+        list[Color]
             Colors in the same order as ``color_names``.
         """
         logger.debug("Selecting colors %s from group '%s'", color_names, color_group_name)
@@ -227,7 +292,7 @@ class ColorSelector:
 
         Returns
         -------
-        list
+        list[Color]
             Randomly sampled colors.
 
         Raises

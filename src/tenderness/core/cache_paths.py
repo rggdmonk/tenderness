@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Cache directory paths for the tenderness library."""
+"""Cache directory paths."""
 
 from __future__ import annotations
 
@@ -25,6 +25,11 @@ from tenderness.core.supported_platforms import SupportedPlatforms
 
 def get_cache_dir() -> pathlib.Path:
     """Get the appropriate user-specific cache directory based on OS conventions.
+
+    Returns
+    -------
+    pathlib.Path
+        Path to the user-specific cache directory.
 
     Raises
     ------

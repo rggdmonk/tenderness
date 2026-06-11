@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Fill-based shape drawing for cairo contexts."""
+"""Fill-based shape drawing."""
 
 from __future__ import annotations
 

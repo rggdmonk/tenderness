@@ -35,6 +35,7 @@ LAYOUT_CONTEXT_INTERFACE_PARAMETERS_EXPECTED_FIELDS = {
     "gravity_hint",
     "language",
     "matrix",
+    "resolution",
     "round_glyph_positions",
 }
 LAYOUT_CONTEXT_INTERFACE_PARAMETERS_TEST_DATACLASS_CONFIG = [
@@ -68,6 +69,7 @@ LAYOUT_CONTEXT_INTERFACE_EXPECTED_PROPERTIES = {
     "gravity_hint",
     "language",
     "matrix",
+    "resolution",
     "round_glyph_positions",
 }
 LAYOUT_CONTEXT_INTERFACE_EXPECTED_METHODS = {

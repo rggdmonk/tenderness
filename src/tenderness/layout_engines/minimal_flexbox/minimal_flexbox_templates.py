@@ -25,7 +25,19 @@ from tenderness.layout_engines.minimal_flexbox.templates.tables import MinimalFl
 
 
 class MinimalFlexBoxTemplates:
-    """Pre-built layout templates grouped by document region."""
+    """Pre-built layout templates grouped by document region.
+
+    Attributes
+    ----------
+    flow_templates
+        Templates for flowing text regions.
+    figure_caption_templates
+        Templates for figure and caption regions.
+    table_templates
+        Templates for table regions.
+    documents_templates
+        Templates for full-document layouts.
+    """
 
     flow_templates = MinimalFlexBoxTemplateFlow()
     figure_caption_templates = MinimalFlexBoxTemplateFigureCaption()

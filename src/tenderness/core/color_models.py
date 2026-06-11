@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Color model enums and cairo color source helpers."""
+"""Color model enums and color source helpers."""
 
 from __future__ import annotations
 
@@ -27,7 +27,19 @@ if TYPE_CHECKING:
 
 @unique
 class AlphaPosition(StrEnum):
-    """Position of the alpha channel within a pixel."""
+    """Position of the alpha channel within a pixel.
+
+    Attributes
+    ----------
+    FIRST
+        Alpha is the first channel.
+    LAST
+        Alpha is the last channel.
+    NONE
+        No alpha channel.
+    ONLY
+        Alpha-only (no color channels).
+    """
 
     FIRST = auto()
     LAST = auto()
@@ -37,7 +49,17 @@ class AlphaPosition(StrEnum):
 
 @unique
 class ColorModel(StrEnum):
-    """Logical color model from user perspective."""
+    """Logical color model from user perspective.
+
+    Attributes
+    ----------
+    RGB
+        Red, green, blue — no alpha.
+    RGBA
+        Red, green, blue, alpha.
+    ALPHA
+        Alpha-only channel (e.g. A8 mask format).
+    """
 
     RGB = auto()
     RGBA = auto()

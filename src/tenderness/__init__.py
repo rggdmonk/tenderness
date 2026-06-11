@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from __future__ import annotations
 
 from tenderness.bounding_boxes import *
@@ -23,4 +24,3 @@ from tenderness.font_setup import *
 from tenderness.image_backend import *
 from tenderness.layout_engines import *
 from tenderness.pango_backend import *
-from tenderness.pipelines import *

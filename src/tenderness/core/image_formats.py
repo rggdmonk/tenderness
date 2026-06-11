@@ -28,16 +28,16 @@ if TYPE_CHECKING:
 class ImageFormatInfo:
     """Metadata for an image format.
 
-    Parameters
+    Attributes
     ----------
     extension
         File extension including the leading dot (e.g. ``".png"``).
     supports_alpha
-        Whether the format supports transparency.
+        ``True`` if the format supports transparency.
     supports_compression
-        Whether the format supports compression.
+        ``True`` if the format supports compression.
     is_vector
-        Whether the format is vector-based.
+        ``True`` if the format is vector-based.
     """
 
     extension: str
@@ -48,7 +48,19 @@ class ImageFormatInfo:
 
 @unique
 class ImageFormat(Enum):
-    """Supported output image formats."""
+    """Supported output image formats.
+
+    Attributes
+    ----------
+    PNG
+        PNG format.
+    JPEG
+        JPEG format.
+    SVG
+        SVG format.
+    PDF
+        PDF format.
+    """
 
     PNG = ImageFormatInfo(
         extension=".png",
@@ -88,17 +100,17 @@ class ImageFormat(Enum):
 
     @property
     def supports_alpha(self) -> bool:
-        """Whether this format supports transparency."""
+        """``True`` if this format supports transparency."""
         return self.value.supports_alpha
 
     @property
     def supports_compression(self) -> bool:
-        """Whether this format supports compression."""
+        """``True`` if this format supports compression."""
         return self.value.supports_compression
 
     @property
     def is_vector(self) -> bool:
-        """Whether this format is vector-based."""
+        """``True`` if this format is vector-based."""
         return self.value.is_vector
 
     # --------------------------
@@ -128,10 +140,10 @@ class ImageFormat(Enum):
         extension
             File extension to look up, case-insensitive.
 
-        Raises
-        ------
-        ValueError
-            If no format matches the extension.
+        Returns
+        -------
+        Self
+            The matching format.
         """
         return cls._lookup_format(extension.lower(), lambda fmt: fmt.extension, "extension")
 
@@ -140,15 +152,33 @@ class ImageFormat(Enum):
     # --------------------------
     @classmethod
     def get_formats_with_alpha(cls) -> list[Self]:
-        """Return all formats that support transparency."""
+        """Return all formats that support transparency.
+
+        Returns
+        -------
+        list[Self]
+            Formats with alpha support.
+        """
         return [fmt for fmt in cls if fmt.supports_alpha]
 
     @classmethod
     def get_vector_formats(cls) -> list[Self]:
-        """Return all vector formats."""
+        """Return all vector formats.
+
+        Returns
+        -------
+        list[Self]
+            Vector formats.
+        """
         return [fmt for fmt in cls if fmt.is_vector]
 
     @classmethod
     def get_raster_formats(cls) -> list[Self]:
-        """Return all raster formats."""
+        """Return all raster formats.
+
+        Returns
+        -------
+        list[Self]
+            Raster formats.
+        """
         return [fmt for fmt in cls if not fmt.is_vector]

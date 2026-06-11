@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Facade combining shape fill and border drawing."""
+"""Drawing operations entry point."""
 
 from __future__ import annotations
 
@@ -24,7 +24,15 @@ from tenderness.draw.minimal_draw.draw_shapes import DrawShapes
 # MinimalDraw
 # ---------------------------------------------------------------------------
 class MinimalDraw:
-    """Unified entry point for fill and border drawing operations."""
+    """Entry point for drawing operations.
+
+    Attributes
+    ----------
+    shapes
+        Shape fill drawing operations.
+    borders
+        Border drawing operations.
+    """
 
     shapes = DrawShapes()
     borders = DrawBorders()

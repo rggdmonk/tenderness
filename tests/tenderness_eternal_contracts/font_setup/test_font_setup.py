@@ -42,6 +42,8 @@ FONT_SETUP_EXPECTED_METHODS = {
     "setup_font",
     "get_all_font_families",
     "is_font_family_available",
+    "get_font_map_resolution",
+    "set_font_map_resolution",
 }
 FONT_SETUP_EXPECTED_CLASS_VARS = {"manager_map"}
 FONT_SETUP_TEST_CLASS_CONFIG = [

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Minimal CSS Flexbox layout engine for pixel-coordinate rendering."""
+"""Minimal CSS Flexbox layout engine for float-coordinate rendering."""
 
 from __future__ import annotations
 
@@ -40,10 +40,9 @@ _FREEZE_EPSILON: float = 1e-5  # items shrunk to within this of 0.0 are frozen
 
 @dataclass(slots=True)
 class MinimalFlexNode:
-    """
-    A node in a flex tree — either a leaf (content) or a nested flex container.
+    """A node in a flex tree — either a leaf (content) or a nested flex container.
 
-    As a **leaf**: set ``size`` to the intrinsic pixel dimensions and leave
+    As a **leaf**: set ``size`` to the intrinsic dimensions and leave
     ``container_props`` / ``children`` empty.
 
     As a **container**: set ``size``, ``container_props``, and ``children``.
@@ -54,6 +53,19 @@ class MinimalFlexNode:
 
     If ``item_props.flex_basis`` is set it overrides ``size`` along the main
     axis, exactly as in the flat API.
+
+    Attributes
+    ----------
+    size
+        Intrinsic dimensions (width, height).
+    item_props
+        Per-item flex properties used by the parent container.
+    container_props
+        Container-level properties; ``None`` when this node is a leaf.
+    children
+        Child nodes; empty when this node is a leaf.
+    name
+        Optional label for debugging.
     """
 
     size: tuple[float, float] = field(default=(0.0, 0.0))
@@ -75,7 +87,23 @@ class MinimalFlexNode:
 
 @dataclass(slots=True)
 class _MinimalFlexItem:
-    """Internal per-item state used during layout resolution."""
+    """Internal per-item state used during layout resolution.
+
+    Attributes
+    ----------
+    source_index
+        Index of the item in the original source list.
+    props
+        Flex item properties.
+    main_size
+        Resolved size along the main axis after flex grow/shrink.
+    cross_size
+        Resolved size along the cross axis after align-items.
+    main_pos
+        Offset from the main-start of the container.
+    cross_pos
+        Offset from the cross-start of the container.
+    """
 
     source_index: int
     props: FlexItemProperties
@@ -86,30 +114,22 @@ class _MinimalFlexItem:
 
 
 class MinimalFlexBox:
-    """
-    A minimal CSS Flexbox layout engine operating on concrete pixel coordinates.
+    """A minimal CSS Flexbox layout engine operating on concrete float coordinates.
 
     Implements the core Flexbox algorithm:
+
     - Single-direction layout on a main axis with a perpendicular cross axis
     - Line wrapping (nowrap / wrap / wrap-reverse)
     - Flex grow and shrink
     - justify-content, align-items, align-self, align-content
     - row-gap / column-gap
 
-    Not implemented (out of scope for a pixel-coordinate renderer):
+    Not implemented (out of scope for a float-coordinate renderer):
+
     - Writing-mode / directionality (ltr / rtl)
     - Percentage sizes or auto margins
     - Baseline alignment
     - min-width / max-width constraints
-
-    Args:
-        container: The rectangle acting as the flex container.
-        props:     Container-level properties (direction, wrap, alignment, gaps).
-        items:     Sequence of ``(FlexItemProperties, (width, height))`` in source order.
-
-    Returns
-    -------
-        ``list[Rectangle]`` with one entry per input item, in **source order**.
     """
 
     def resolve(
@@ -128,6 +148,11 @@ class MinimalFlexBox:
             Container-level properties (direction, wrap, alignment, gaps).
         items
             Sequence of ``(FlexItemProperties, (width, height))`` in source order.
+
+        Returns
+        -------
+        list[Rectangle]
+            One rectangle per input item, in source order.
         """
         if not items:
             return []
@@ -200,7 +225,12 @@ class MinimalFlexBox:
         -------
         list[tuple[MinimalFlexNode, Rectangle]]
             Flat list of ``(leaf_node, rect)`` pairs in depth-first tree order.
-            Leaf rects are absolute pixel Rectangles.
+            Leaf rects are absolute Rectangles.
+
+        Raises
+        ------
+        ValueError
+            If ``node.container_props`` is ``None``.
         """
         if node.container_props is None:
             msg = "resolve_tree requires a container node (container_props must be set)"
@@ -228,7 +258,20 @@ class MinimalFlexBox:
         *,
         is_row: bool,
     ) -> list[_MinimalFlexItem]:
-        """Construct :class:`_FlexItem` instances with flex-basis and intrinsic sizes."""
+        """Construct _MinimalFlexItem instances with flex-basis and intrinsic sizes.
+
+        Parameters
+        ----------
+        indexed
+            Source-indexed items sorted by ``order``.
+        is_row
+            ``True`` for row directions; ``False`` for column.
+
+        Returns
+        -------
+        list[_MinimalFlexItem]
+            Flex items with main/cross sizes initialised.
+        """
         result = []
         for src_idx, (item_props, size) in indexed:
             intrinsic_main = size[0] if is_row else size[1]
@@ -246,7 +289,24 @@ class MinimalFlexBox:
         main_gap: float,
         wrap: FlexWrap,
     ) -> list[list[_MinimalFlexItem]]:
-        """Split *items* into flex lines according to *wrap* and *container_main*."""
+        """Split items into flex lines according to wrap and container_main.
+
+        Parameters
+        ----------
+        items
+            Ordered flex items to distribute into lines.
+        container_main
+            Container size along the main axis.
+        main_gap
+            Gap between items along the main axis.
+        wrap
+            Wrapping mode.
+
+        Returns
+        -------
+        list[list[_MinimalFlexItem]]
+            Items grouped into one or more flex lines.
+        """
         if wrap == FlexWrap.NOWRAP:
             return [list(items)]
 
@@ -275,7 +335,17 @@ class MinimalFlexBox:
         container_main: float,
         main_gap: float,
     ) -> None:
-        """Apply flex-grow / flex-shrink to items in *line*, mutating ``main_size`` in-place."""
+        """Apply flex-grow / flex-shrink to items in line, mutating main_size in-place.
+
+        Parameters
+        ----------
+        line
+            Flex items in a single line.
+        container_main
+            Container size along the main axis.
+        main_gap
+            Gap between items along the main axis.
+        """
         if not line:
             return
 
@@ -295,6 +365,13 @@ class MinimalFlexBox:
 
         Items that would shrink below 0.0 are frozen at 0.0 and their unabsorbed
         deficit is redistributed to the remaining unfrozen items.
+
+        Parameters
+        ----------
+        line
+            Flex items to shrink.
+        deficit
+            Total free space to absorb (positive value).
         """
         unfrozen = list(line)
         while unfrozen and deficit > _FREEZE_EPSILON:
@@ -329,7 +406,21 @@ class MinimalFlexBox:
         *,
         is_wrap_reverse: bool,
     ) -> None:
-        """Compute line cross sizes, distribute them, then align items within each line."""
+        """Compute line cross sizes, distribute them, then align items within each line.
+
+        Parameters
+        ----------
+        lines
+            Flex lines produced by line collection.
+        container_cross
+            Container size along the cross axis.
+        cross_gap
+            Gap between lines along the cross axis.
+        props
+            Container-level flex properties.
+        is_wrap_reverse
+            ``True`` when wrap direction is reversed.
+        """
         is_single_line = props.wrap == FlexWrap.NOWRAP
         # align-content: normal acts like stretch for multi-line containers
         effective_ac = AlignContent.STRETCH if props.align_content == AlignContent.NORMAL else props.align_content
@@ -375,7 +466,26 @@ class MinimalFlexBox:
         *,
         is_single_line: bool,
     ) -> list[float]:
-        """Return the cross-axis size for each flex line."""
+        """Return the cross-axis size for each flex line.
+
+        Parameters
+        ----------
+        lines
+            Flex lines produced by line collection.
+        container_cross
+            Container size along the cross axis.
+        cross_gap
+            Gap between lines along the cross axis.
+        align_content
+            Content alignment mode applied to lines.
+        is_single_line
+            ``True`` when wrap mode is ``NOWRAP``.
+
+        Returns
+        -------
+        list[float]
+            Cross-axis size for each line.
+        """
         n = len(lines)
 
         # nowrap containers always occupy the full cross dimension; wrapping containers
@@ -403,10 +513,23 @@ class MinimalFlexBox:
         *,
         is_wrap_reverse: bool,
     ) -> None:
-        """Set ``item.cross_pos`` (and optionally ``cross_size``) within its line.
+        """Set item.cross_pos (and optionally cross_size) within its line.
 
-        When *is_wrap_reverse* is True the container's cross-start and cross-end are
+        When is_wrap_reverse is ``True`` the container's cross-start and cross-end are
         swapped, so FLEX_START/FLEX_END positions within each line are also swapped.
+
+        Parameters
+        ----------
+        item
+            Flex item to align.
+        line_cross_size
+            Cross-axis size of the item's flex line.
+        line_cross_pos
+            Cross-axis start position of the item's flex line.
+        align_items
+            Default alignment for items not overriding with align-self.
+        is_wrap_reverse
+            ``True`` when wrap direction is reversed.
         """
         align = item.props.align_self
         effective: AlignItems | AlignSelf = align_items if align == AlignSelf.AUTO else align
@@ -433,7 +556,19 @@ class MinimalFlexBox:
         main_gap: float,
         justify_mode: JustifyContent,
     ) -> None:
-        """Distribute items along the main axis (justify-content), mutating ``main_pos``."""
+        """Distribute items along the main axis (justify-content), mutating main_pos.
+
+        Parameters
+        ----------
+        lines
+            Flex lines to distribute.
+        container_main
+            Container size along the main axis.
+        main_gap
+            Gap between items along the main axis.
+        justify_mode
+            Justify-content mode.
+        """
         for line in lines:
             positions = self._distribute(
                 sizes=[item.main_size for item in line], container=container_main, gap=main_gap, mode=justify_mode
@@ -449,7 +584,24 @@ class MinimalFlexBox:
         is_row: bool,
         is_reverse_main: bool,
     ) -> Rectangle:
-        """Convert an item's main/cross offsets into an absolute ``Rectangle``."""
+        """Convert an item's main/cross offsets into an absolute Rectangle.
+
+        Parameters
+        ----------
+        item
+            Resolved flex item with main/cross position and size.
+        container
+            Absolute bounds of the flex container.
+        is_row
+            ``True`` for row directions; ``False`` for column.
+        is_reverse_main
+            ``True`` when the main axis runs in reverse order.
+
+        Returns
+        -------
+        Rectangle
+            Absolute rectangle for the item.
+        """
         if is_row:
             x = container.x_max - item.main_pos - item.main_size if is_reverse_main else container.x_min + item.main_pos
             return Rectangle(x=x, y=container.y_min + item.cross_pos, width=item.main_size, height=item.cross_size)
@@ -457,13 +609,26 @@ class MinimalFlexBox:
         return Rectangle(x=container.x_min + item.cross_pos, y=y, width=item.cross_size, height=item.main_size)
 
     def _distribute(self, sizes: list[float], container: float, gap: float, mode: _DistMode) -> list[float]:
-        """
-        Return start positions for *sizes* distributed across *container*.
+        """Return start positions for sizes distributed across container.
 
         Positions are relative to the start of the container on the relevant axis.
-        The caller converts to absolute pixel coordinates in ``_to_rect``.
+        The caller converts to absolute coordinates in ``_to_rect``.
 
-        Supports all ``JustifyContent`` and ``AlignContent`` string values.
+        Parameters
+        ----------
+        sizes
+            Item sizes along the distribution axis.
+        container
+            Container size along the distribution axis.
+        gap
+            Minimum gap between items.
+        mode
+            Distribution mode.
+
+        Returns
+        -------
+        list[float]
+            Start position for each item relative to the container start.
         """
         n = len(sizes)
         if n == 0:
@@ -479,14 +644,30 @@ class MinimalFlexBox:
         return positions
 
     def _distribution_params(self, n: int, free: float, gap: float, mode: _DistMode) -> tuple[float, float]:
-        """Return ``(start_pos, inter-item spacing)`` for the given distribution *mode*.
+        """Return ``(start_pos, inter-item spacing)`` for the given distribution mode.
 
-        When *free* < 0 (overflow), space-distribution modes fall back to safe modes
+        When free < 0 (overflow), space-distribution modes fall back to safe modes
         per the CSS Box Alignment spec: SPACE_BETWEEN → FLEX_START,
         SPACE_AROUND / SPACE_EVENLY → CENTER.
 
-        *gap* is the minimum baseline spacing; space-distribution modes add their
+        gap is the minimum baseline spacing; space-distribution modes add their
         computed chunk on top of it.
+
+        Parameters
+        ----------
+        n
+            Number of items to distribute.
+        free
+            Available free space (may be negative on overflow).
+        gap
+            Minimum baseline gap between items.
+        mode
+            Distribution mode.
+
+        Returns
+        -------
+        tuple[float, float]
+            Start position and inter-item spacing.
         """
         # Overflow fallback: space modes are undefined for negative free space.
         if free < 0:

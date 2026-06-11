@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Color pattern specs and cairo pattern factory."""
+"""Color pattern specs and pattern factory."""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 class ColorStop:
     """A color at a specific offset along a gradient.
 
-    Parameters
+    Attributes
     ----------
     offset
         Position along the gradient, from 0.0 to 1.0.
@@ -46,7 +46,13 @@ class ColorStop:
 
 @dataclass(frozen=True, slots=True)
 class SolidColorSpec:
-    """Specification for a solid color fill."""
+    """Specification for a solid color fill.
+
+    Attributes
+    ----------
+    color
+        Color to fill with.
+    """
 
     color: Color
 
@@ -55,7 +61,7 @@ class SolidColorSpec:
 class LinearGradientColorSpec:
     """Specification for a linear gradient fill.
 
-    Parameters
+    Attributes
     ----------
     x0
         x-coordinate of the gradient start point.
@@ -80,7 +86,7 @@ class LinearGradientColorSpec:
 class RadialGradientColorSpec:
     """Specification for a radial gradient fill.
 
-    Parameters
+    Attributes
     ----------
     cx0
         x-coordinate of the inner circle center.
@@ -111,7 +117,7 @@ class RadialGradientColorSpec:
 class SurfacePatternSpec:
     """Specification for a surface-based fill pattern.
 
-    Parameters
+    Attributes
     ----------
     surface
         Cairo surface to use as the pattern source.
@@ -133,7 +139,7 @@ class SurfacePatternSpec:
 class ImagePatternSpec:
     """Specification for a PNG image fill pattern.
 
-    Parameters
+    Attributes
     ----------
     path
         Path or file-like object for the PNG image.
@@ -173,6 +179,11 @@ class ColorPattern:
         color_model
             Color model used when constructing color patterns.
 
+        Returns
+        -------
+        cairo.Pattern
+            Pattern corresponding to the given specification.
+
         Raises
         ------
         TypeError
@@ -202,6 +213,11 @@ class ColorPattern:
         color_model
             Determines whether RGB or RGBA values are used.
 
+        Returns
+        -------
+        cairo.SolidPattern
+            Solid pattern for the given color.
+
         Raises
         ------
         ValueError
@@ -224,6 +240,11 @@ class ColorPattern:
             Linear gradient specification including endpoints and stops.
         color_model
             Determines whether RGB or RGBA stop colors are used.
+
+        Returns
+        -------
+        cairo.LinearGradient
+            Linear gradient pattern for the given specification.
 
         Raises
         ------
@@ -257,6 +278,11 @@ class ColorPattern:
         color_model
             Determines whether RGB or RGBA stop colors are used.
 
+        Returns
+        -------
+        cairo.RadialGradient
+            Radial gradient pattern for the given specification.
+
         Raises
         ------
         ValueError
@@ -283,7 +309,18 @@ class ColorPattern:
 
     @staticmethod
     def surface_pattern(spec: SurfacePatternSpec) -> cairo.SurfacePattern:
-        """Create a surface cairo pattern from a SurfacePatternSpec."""
+        """Create a surface cairo pattern from a SurfacePatternSpec.
+
+        Parameters
+        ----------
+        spec
+            Surface pattern specification.
+
+        Returns
+        -------
+        cairo.SurfacePattern
+            Surface pattern configured from the given specification.
+        """
         pattern = cairo.SurfacePattern(spec.surface)
         if spec.extend is not _UNSET_PARAM:
             pattern.set_extend(spec.extend)
@@ -295,7 +332,18 @@ class ColorPattern:
 
     @staticmethod
     def image_pattern(spec: ImagePatternSpec) -> cairo.SurfacePattern:
-        """Create a surface cairo pattern from a PNG image file."""
+        """Create a surface cairo pattern from a PNG image file.
+
+        Parameters
+        ----------
+        spec
+            PNG image pattern specification.
+
+        Returns
+        -------
+        cairo.SurfacePattern
+            Surface pattern backed by the loaded PNG image.
+        """
         surface = cairo.ImageSurface.create_from_png(spec.path)
         return ColorPattern.surface_pattern(
             SurfacePatternSpec(

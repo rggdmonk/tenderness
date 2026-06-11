@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Surface configuration factory."""
+
 from __future__ import annotations
 
 import logging
@@ -62,12 +64,15 @@ class SurfaceConfigManager:
         pixel_format
             Pixel format for the cairo image surface.
 
+        Returns
+        -------
+        ImageSurfaceConfig
+            Validated image surface configuration.
+
         Raises
         ------
         TypeError
             If ``pixel_format`` is not a PixelFormat instance.
-        ValueError
-            If the configuration is invalid.
         """
         if not isinstance(pixel_format, PixelFormat):
             msg = f"pixel_format must be an instance of {PixelFormat.__name__}, got {type(pixel_format).__name__}."
@@ -116,10 +121,10 @@ class SurfaceConfigManager:
         fallback_resolution
             Optional (x, y) resolution for rasterized fallback content.
 
-        Raises
-        ------
-        ValueError
-            If the configuration is invalid.
+        Returns
+        -------
+        SVGSurfaceConfig
+            Validated SVG surface configuration.
         """
         svg_cfg = SVGSurfaceConfig(
             width=width,
@@ -164,10 +169,10 @@ class SurfaceConfigManager:
         pdf_version
             PDF specification version.
 
-        Raises
-        ------
-        ValueError
-            If the configuration is invalid.
+        Returns
+        -------
+        PDFSurfaceConfig
+            Validated PDF surface configuration.
         """
         pdf_cfg = PDFSurfaceConfig(
             width=width,

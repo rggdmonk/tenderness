@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Rectangle inset and position helpers."""
+"""Position helpers."""
 
 from __future__ import annotations
 
@@ -48,6 +48,11 @@ class PositionHelpers:
             Left margin in device units; ignored when margin is provided.
         margin
             Explicit margin to apply; constructed from the individual values when ``None``.
+
+        Returns
+        -------
+        tuple[Rectangle, Margin]
+            Content rectangle after insetting and the applied margin.
         """
         if margin is None:
             margin = Margin(top=top, right=right, bottom=bottom, left=left)

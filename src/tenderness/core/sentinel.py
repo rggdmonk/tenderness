@@ -24,6 +24,11 @@ class _UnsetParamType(Enum):
     """Sentinel for unset optional parameters.
 
     Never instantiate directly — use ``_UNSET_PARAM``.
+
+    Attributes
+    ----------
+    UNSET
+        The single sentinel value representing an unset parameter.
     """
 
     UNSET = "UNSET"

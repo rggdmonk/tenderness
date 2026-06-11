@@ -11,19 +11,24 @@ hide:
   ![tenderness_logo_light](assets/logo/tenderness-lockup-horizontal-light.svg#only-light){ width="500" }
 </figure>
 
+<p align="center">
+  <a href="https://github.com/paperchase-labs/tenderness"><img src="https://img.shields.io/badge/source-GitHub-181717?logo=github&logoColor=white&style=flat" alt="Source Code"/></a>
+  <a href="https://github.com/paperchase-labs/tenderness-examples"><img src="https://img.shields.io/badge/examples-GitHub-181717?logo=github&logoColor=white&style=flat" alt="Examples"/></a>
+  <a href="https://paperchase-labs.github.io/tenderness/"><img src="https://img.shields.io/badge/docs-online-75528b?logo=github&logoColor=white&style=flat" alt="Documentation"/></a>
+  <a href="https://pypi.org/project/tenderness"><img src="https://img.shields.io/pypi/v/tenderness?logo=python&logoColor=white&label=PyPI" alt="Python Package Index"/></a>
+  <a href="https://pypi.org/project/tenderness"><img src="https://img.shields.io/pypi/pyversions/tenderness?logo=python&logoColor=white&style=flat" alt="Python versions"/></a>
+</p>
+<p align="center">
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"/></a>
+  <a href="https://github.com/pre-commit/pre-commit"><img src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=flat" alt="pre-commit"/></a>
+  <a href="https://numpydoc.readthedocs.io/en/latest/format.html"><img src="https://img.shields.io/badge/docstrings-NumPy-4DABCF?logo=numpy&logoColor=white&style=flat" alt="NumPy docstrings"/></a>
+  <a href="https://github.com/jsh9/pydoclint"><img src="https://img.shields.io/badge/pydoclint-checked-4DABCF?logo=python&logoColor=white&style=flat" alt="pydoclint"/></a>
+  <a href="https://mypy-lang.org/"><img src="https://img.shields.io/badge/type--checked-mypy-blue?logo=python&logoColor=white&style=flat" alt="mypy"/></a>
+  <a href="https://github.com/paperchase-labs/tenderness/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-4caf50?logo=apache&logoColor=white&style=flat" alt="License: Apache-2.0"/></a>
+</p>
+
+
 **tenderness** is a fast library for *synthetic*, deterministic document rendering from text and images, powered by [Cairo](https://www.cairographics.org/) and [Pango](https://docs.gtk.org/Pango/index.html).
-
-- **Documentation:** https://paperchase-labs.github.io/tenderness
-
-- **Source Code:** https://github.com/paperchase-labs/tenderness
-
-- **PyPI:** https://pypi.org/project/tenderness/
-
-- **Examples:** https://github.com/paperchase-labs/tenderness-examples
-
-!!! info
-
-    🚧 This library is in active development. We recommend pinning to a specific version for now.
 
 
 

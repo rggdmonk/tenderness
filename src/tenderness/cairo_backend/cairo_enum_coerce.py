@@ -22,11 +22,11 @@ import cairo
 
 
 class CairoEnumCoerce:
-    """Utilities for building lowercase string-to-enum maps and coercing values."""
+    """Utilities for building lowercase string-to-enum maps and coercing values for Cairo enums."""
 
     @staticmethod
     def build_map(enum_type: type) -> dict[str, object]:
-        """Build a lowercase name-to-value map from a cairo enum type.
+        """Build a lowercase name-to-value map from a Cairo enum type.
 
         Parameters
         ----------
@@ -35,7 +35,7 @@ class CairoEnumCoerce:
 
         Returns
         -------
-        dict
+        dict[str, object]
             Mapping of lowercase member name to enum value.
         """
         return {
@@ -51,7 +51,7 @@ class CairoEnumCoerce:
         Parameters
         ----------
         mapping
-            Lowercase name-to-value map, typically produced by ``build_map``.
+            Lowercase name-to-value map, produced by ``build_map``.
         value
             Value to coerce; returned unchanged if not a string.
 
@@ -78,7 +78,29 @@ class CairoEnumCoerce:
 
 
 class CairoEnumMap:
-    """Pre-built lowercase string-to-value maps for common cairo enums."""
+    """Pre-built lowercase string-to-value maps for Cairo enums.
+
+    Attributes
+    ----------
+    Antialias
+        Map for ``cairo.Antialias``.
+    HintStyle
+        Map for ``cairo.HintStyle``.
+    SubpixelOrder
+        Map for ``cairo.SubpixelOrder``.
+    HintMetrics
+        Map for ``cairo.HintMetrics``.
+    ColorMode
+        Map for ``cairo.ColorMode``.
+    Operator
+        Map for ``cairo.Operator``.
+    SVGUnit
+        Map for ``cairo.SVGUnit``.
+    SVGVersion
+        Map for ``cairo.SVGVersion``.
+    PDFVersion
+        Map for ``cairo.PDFVersion``.
+    """
 
     # cairo.FontOptions
     Antialias = CairoEnumCoerce.build_map(cairo.Antialias)

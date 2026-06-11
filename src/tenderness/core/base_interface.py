@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Base interface and parameter classes for cairo interfaces."""
+"""Base interface and parameter classes for interfaces."""
 
 from __future__ import annotations
 
 import functools
-import logging
 from dataclasses import Field, fields
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -25,9 +24,6 @@ from tenderness.core.sentinel import _UNSET_PARAM
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-
-logger = logging.getLogger(__name__)
 
 
 class BaseInterfaceParameters:
@@ -112,6 +108,11 @@ class BaseInterfaceParameters:
     def _update_parameters_unsafe(self, **kwargs: object) -> None:
         """Update parameters from kwargs without name validation.
 
+        Parameters
+        ----------
+        **kwargs
+            Parameter names and their new values.
+
         Notes
         -----
         No field-name check is performed; callers must ensure all keys are valid.
@@ -128,7 +129,7 @@ class BaseInterfaceParameters:
 
 
 class BaseInterface:
-    """Base class for cairo interface wrappers.
+    """Base class for interface.
 
     Parameters
     ----------
@@ -142,11 +143,23 @@ class BaseInterface:
         self.name = name
 
     def __repr__(self) -> str:
-        """Return a string representation."""
+        """Return a string representation.
+
+        Returns
+        -------
+        str
+            String representation of the instance.
+        """
         return f"{type(self).__name__}(name={self.name!r})"
 
     def __init_subclass__(cls, **kwargs: object) -> None:
-        """Build the property setter dispatch map for the subclass on class creation."""
+        """Build the property setter dispatch map for the subclass on class creation.
+
+        Parameters
+        ----------
+        **kwargs
+            Passed through to ``super().__init_subclass__``.
+        """
         super().__init_subclass__(**kwargs)
 
         dispatch: dict[str, Callable[[Any, Any], None]] = {}
@@ -184,6 +197,11 @@ class BaseInterface:
     def _update_with_parameters_from_kwargs(self, **kwargs: object) -> None:
         """Update parameters from kwargs.
 
+        Parameters
+        ----------
+        **kwargs
+            Parameter names and their new values.
+
         Raises
         ------
         AttributeError
@@ -199,6 +217,11 @@ class BaseInterface:
 
     def _update_with_parameters_unsafe_kwargs(self, **kwargs: object) -> None:
         """Update parameters from kwargs without validation.
+
+        Parameters
+        ----------
+        **kwargs
+            Parameter names and their new values.
 
         Notes
         -----

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Cairo surface factory for image, SVG, and PDF output."""
+"""Surface factory."""
 
 from __future__ import annotations
 
@@ -57,9 +57,11 @@ class SurfaceCreator:
 
         Returns
         -------
-        tuple
-            ``(surface, stream)`` where ``stream`` is ``None`` for image surfaces
-            and a ``BytesIO`` holding the vector data for SVG and PDF surfaces.
+        cairo.Surface
+            The created surface.
+        io.BytesIO | None
+            ``None`` for image surfaces; a ``BytesIO`` holding the vector data
+            for SVG and PDF surfaces.
 
         Raises
         ------

@@ -25,7 +25,15 @@ from tenderness.core.image_formats import ImageFormat
 
 @dataclass(slots=True, frozen=True)
 class ImageBackendInfo:
-    """Backend metadata: name and supported formats."""
+    """Backend metadata: name and supported formats.
+
+    Attributes
+    ----------
+    backend_name
+        Human-readable package name for the backend.
+    supported_formats
+        Set of image formats this backend can produce.
+    """
 
     backend_name: str
     supported_formats: frozenset[ImageFormat]
@@ -33,7 +41,17 @@ class ImageBackendInfo:
 
 @unique
 class ImageBackend(Enum):
-    """Available image rendering backends with their format capabilities."""
+    """Available image rendering backends with their format capabilities.
+
+    Attributes
+    ----------
+    CAIRO
+        pycairo backend; supports PNG, SVG, and PDF.
+    PIL
+        Pillow backend; supports PNG and JPEG.
+    CV2
+        OpenCV backend; supports PNG and JPEG.
+    """
 
     CAIRO = ImageBackendInfo(
         backend_name="pycairo",
@@ -65,15 +83,38 @@ class ImageBackend(Enum):
     # Methods
     # --------------------------
     def is_image_format_supported(self, image_format: ImageFormat) -> bool:
-        """Return whether ``image_format`` is supported by this backend."""
+        """Check if ``image_format`` is supported by this backend.
+
+        Parameters
+        ----------
+        image_format
+            Format to check.
+
+        Returns
+        -------
+        bool
+            ``True`` if the format is supported.
+        """
         return image_format in self.supported_formats
 
     def has_alpha_support(self) -> bool:
-        """Return whether any supported format handles alpha."""
+        """Check if any supported format handles alpha.
+
+        Returns
+        -------
+        bool
+            ``True`` if at least one supported format has an alpha channel.
+        """
         return any(fmt.supports_alpha for fmt in self.supported_formats)
 
     def has_vector_support(self) -> bool:
-        """Return whether any supported format is vector-based."""
+        """Check if any supported format is vector-based.
+
+        Returns
+        -------
+        bool
+            ``True`` if at least one supported format is vector-based.
+        """
         return any(fmt.is_vector for fmt in self.supported_formats)
 
     # --------------------------
@@ -81,7 +122,18 @@ class ImageBackend(Enum):
     # --------------------------
     @classmethod
     def backends_supporting_format(cls, image_format: ImageFormat) -> list[Self]:
-        """Return all backends that support ``image_format``."""
+        """Return all backends that support ``image_format``.
+
+        Parameters
+        ----------
+        image_format
+            Format to filter by.
+
+        Returns
+        -------
+        list[Self]
+            Backends that support the given format.
+        """
         return [backend for backend in cls if backend.is_image_format_supported(image_format)]
 
     @classmethod
@@ -92,6 +144,11 @@ class ImageBackend(Enum):
         ----------
         *formats
             Formats that must all be supported; returns all backends if empty.
+
+        Returns
+        -------
+        list[Self]
+            Backends that support every format in ``formats``.
         """
         if not formats:
             return list(cls)

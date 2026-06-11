@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Supported operating system platforms."""
+"""Supported platforms."""
 
 from __future__ import annotations
 
@@ -21,7 +21,15 @@ from enum import StrEnum, unique
 
 @unique
 class SupportedPlatforms(StrEnum):
-    """Operating systems supported by this library."""
+    """Supported operating systems.
 
-    DARWIN = "Darwin"  # macOS
+    Attributes
+    ----------
+    DARWIN
+        macOS.
+    LINUX
+        Linux.
+    """
+
+    DARWIN = "Darwin"
     LINUX = "Linux"

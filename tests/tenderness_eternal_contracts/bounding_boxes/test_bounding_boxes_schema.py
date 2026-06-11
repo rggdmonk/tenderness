@@ -18,22 +18,21 @@ import pytest
 
 from tenderness.bounding_boxes.bounding_boxes_schema import (
     BoundingBox,
-    BoundingBoxStrategy,
     BoundingBoxType,
     BoundingBoxWithInk,
     CharBBox,
     ClusterBBox,
     LayoutBBox,
-    LayoutBBoxCollection,
     LineBBox,
+    Quadrilateral,
     RunBBox,
-    Tetragon,
+    TextBoundingBoxes,
 )
 from tests._test_utils.dataclass_test import DataclassTestBase, DataclassTestConfig
 from tests._test_utils.enum_test import EnumTestBase, EnumTestConfig
 
 # --------------------------
-# Tests for BoundingBoxType
+# Eternal contract tests for BoundingBoxType
 # --------------------------
 BOUNDING_BOX_TYPE_EXPECTED_MEMBERS = {"CHAR", "CLUSTER", "LINE", "RUN", "LAYOUT"}
 BOUNDING_BOX_TYPE_TEST_ENUM_CONFIG = [
@@ -50,42 +49,26 @@ class TestBoundingBoxTypeContract(EnumTestBase):
 
 
 # --------------------------
-# Tests for BoundingBoxStrategy
+# Eternal contract tests for Quadrilateral
 # --------------------------
-BOUNDING_BOX_STRATEGY_EXPECTED_MEMBERS = {"ONLY_BOXES", "WITH_TEXT"}
-BOUNDING_BOX_STRATEGY_TEST_ENUM_CONFIG = [
-    EnumTestConfig(
-        enum_class=BoundingBoxStrategy,
-        expected_members=BOUNDING_BOX_STRATEGY_EXPECTED_MEMBERS,
-    )
-]
-
-
-@pytest.mark.parametrize("config", BOUNDING_BOX_STRATEGY_TEST_ENUM_CONFIG, ids=lambda c: c.enum_class.__name__)
-class TestBoundingBoxStrategyContract(EnumTestBase):
-    pass
-
-
-# --------------------------
-# Tests for Tetragon
-# --------------------------
-TETRAGON_EXPECTED_FIELDS = {"top_left", "top_right", "bottom_right", "bottom_left"}
-TETRAGON_TEST_DATACLASS_CONFIG = [
+QUADRILATERAL_EXPECTED_FIELDS = {"top_left", "top_right", "bottom_right", "bottom_left"}
+QUADRILATERAL_TEST_DATACLASS_CONFIG = [
     DataclassTestConfig(
-        dataclass_class=Tetragon,
+        dataclass_class=Quadrilateral,
         has_slots=True,
-        expected_fields=TETRAGON_EXPECTED_FIELDS,
+        expected_fields=QUADRILATERAL_EXPECTED_FIELDS,
+        expected_methods={"to_dict"},
     )
 ]
 
 
-@pytest.mark.parametrize("config", TETRAGON_TEST_DATACLASS_CONFIG, ids=lambda c: c.dataclass_class.__name__)
-class TestTetragonContract(DataclassTestBase):
+@pytest.mark.parametrize("config", QUADRILATERAL_TEST_DATACLASS_CONFIG, ids=lambda c: c.dataclass_class.__name__)
+class TestQuadrilateralContract(DataclassTestBase):
     pass
 
 
 # --------------------------
-# Tests for BoundingBox
+# Eternal contract tests for BoundingBox
 # --------------------------
 BOUNDING_BOX_EXPECTED_FIELDS = {"logical_bbox"}
 BOUNDING_BOX_TEST_DATACLASS_CONFIG = [
@@ -103,7 +86,7 @@ class TestBoundingBoxContract(DataclassTestBase):
 
 
 # --------------------------
-# Tests for BoundingBoxWithInk
+# Eternal contract tests for BoundingBoxWithInk
 # --------------------------
 BOUNDING_BOX_WITH_INK_EXPECTED_FIELDS = {"ink_bbox"}
 BOUNDING_BOX_WITH_INK_TEST_DATACLASS_CONFIG = [
@@ -123,14 +106,15 @@ class TestBoundingBoxWithInkContract(DataclassTestBase):
 
 
 # --------------------------
-# Tests for CharBBox
+# Eternal contract tests for CharBBox
 # --------------------------
-CHAR_BBOX_EXPECTED_FIELDS = {"char", "byte_index"}
+CHAR_BBOX_EXPECTED_FIELDS = {"text", "byte_index", "byte_length"}
 CHAR_BBOX_TEST_DATACLASS_CONFIG = [
     DataclassTestConfig(
         dataclass_class=CharBBox,
         has_slots=True,
         expected_fields=CHAR_BBOX_EXPECTED_FIELDS,
+        expected_methods={"to_dict"},
     )
 ]
 
@@ -141,14 +125,15 @@ class TestCharBBoxContract(DataclassTestBase):
 
 
 # --------------------------
-# Tests for ClusterBBox
+# Eternal contract tests for ClusterBBox
 # --------------------------
-CLUSTER_BBOX_EXPECTED_FIELDS = {"text", "byte_index"}
+CLUSTER_BBOX_EXPECTED_FIELDS = {"text", "byte_index", "byte_length"}
 CLUSTER_BBOX_TEST_DATACLASS_CONFIG = [
     DataclassTestConfig(
         dataclass_class=ClusterBBox,
         has_slots=True,
         expected_fields=CLUSTER_BBOX_EXPECTED_FIELDS,
+        expected_methods={"to_dict"},
     )
 ]
 
@@ -159,14 +144,15 @@ class TestClusterBBoxContract(DataclassTestBase):
 
 
 # --------------------------
-# Tests for RunBBox
+# Eternal contract tests for RunBBox
 # --------------------------
-RUN_BBOX_EXPECTED_FIELDS = {"text", "byte_start", "byte_length", "baseline"}
+RUN_BBOX_EXPECTED_FIELDS = {"text", "byte_index", "byte_length", "baseline"}
 RUN_BBOX_TEST_DATACLASS_CONFIG = [
     DataclassTestConfig(
         dataclass_class=RunBBox,
         has_slots=True,
         expected_fields=RUN_BBOX_EXPECTED_FIELDS,
+        expected_methods={"to_dict"},
     )
 ]
 
@@ -177,11 +163,11 @@ class TestRunBBoxContract(DataclassTestBase):
 
 
 # --------------------------
-# Tests for LineBBox
+# Eternal contract tests for LineBBox
 # --------------------------
 LINE_BBOX_EXPECTED_FIELDS = {
     "text",
-    "byte_start",
+    "byte_index",
     "byte_length",
     "resolved_direction",
     "is_paragraph_start",
@@ -192,6 +178,7 @@ LINE_BBOX_TEST_DATACLASS_CONFIG = [
         dataclass_class=LineBBox,
         has_slots=True,
         expected_fields=LINE_BBOX_EXPECTED_FIELDS,
+        expected_methods={"to_dict"},
     )
 ]
 
@@ -202,7 +189,7 @@ class TestLineBBoxContract(DataclassTestBase):
 
 
 # --------------------------
-# Tests for LayoutBBox
+# Eternal contract tests for LayoutBBox
 # --------------------------
 LAYOUT_BBOX_EXPECTED_FIELDS = {"text"}
 LAYOUT_BBOX_TEST_DATACLASS_CONFIG = [
@@ -210,6 +197,7 @@ LAYOUT_BBOX_TEST_DATACLASS_CONFIG = [
         dataclass_class=LayoutBBox,
         has_slots=True,
         expected_fields=LAYOUT_BBOX_EXPECTED_FIELDS,
+        expected_methods={"to_dict"},
     )
 ]
 
@@ -220,30 +208,19 @@ class TestLayoutBBoxContract(DataclassTestBase):
 
 
 # --------------------------
-# Tests for LayoutBBoxCollection
+# Eternal contract tests for TextBoundingBoxes
 # --------------------------
-LAYOUT_BBOX_COLLECTION_EXPECTED_FIELDS = {
-    "char_boxes",
-    "cluster_boxes",
-    "run_boxes",
-    "line_boxes",
-    "layout_box",
-    "position_name",
-    "block_name",
-    "table_name",
-    "cell_name",
-}
-LAYOUT_BBOX_COLLECTION_TEST_DATACLASS_CONFIG = [
+TEXT_BOUNDING_BOXES_EXPECTED_FIELDS = {"char_bboxes", "cluster_bboxes", "run_bboxes", "line_bboxes", "layout_bbox"}
+TEXT_BOUNDING_BOXES_TEST_DATACLASS_CONFIG = [
     DataclassTestConfig(
-        dataclass_class=LayoutBBoxCollection,
+        dataclass_class=TextBoundingBoxes,
         has_slots=True,
-        expected_fields=LAYOUT_BBOX_COLLECTION_EXPECTED_FIELDS,
+        expected_fields=TEXT_BOUNDING_BOXES_EXPECTED_FIELDS,
+        expected_methods={"to_dict"},
     )
 ]
 
 
-@pytest.mark.parametrize(
-    "config", LAYOUT_BBOX_COLLECTION_TEST_DATACLASS_CONFIG, ids=lambda c: c.dataclass_class.__name__
-)
-class TestLayoutBBoxCollectionContract(DataclassTestBase):
+@pytest.mark.parametrize("config", TEXT_BOUNDING_BOXES_TEST_DATACLASS_CONFIG, ids=lambda c: c.dataclass_class.__name__)
+class TestTextBoundingBoxesContract(DataclassTestBase):
     pass

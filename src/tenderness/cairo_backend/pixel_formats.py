@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Cairo pixel format definitions and metadata."""
+"""Pixel format definitions and metadata."""
 
 from __future__ import annotations
 
@@ -31,7 +31,19 @@ if TYPE_CHECKING:
 
 @unique
 class PixelDType(StrEnum):
-    """Numeric dtype of a pixel memory unit or output array element."""
+    """Numeric dtype of a pixel memory unit or output array element.
+
+    Attributes
+    ----------
+    UINT8
+        8-bit unsigned integer.
+    UINT16
+        16-bit unsigned integer.
+    UINT32
+        32-bit unsigned integer.
+    FLOAT32
+        32-bit floating point.
+    """
 
     UINT8 = auto()
     UINT16 = auto()
@@ -80,7 +92,19 @@ class PixelDType(StrEnum):
 
 @unique
 class ChannelOrder(StrEnum):
-    """Requested channel order of the output array (user-facing)."""
+    """Requested channel order of the output array (user-facing).
+
+    Attributes
+    ----------
+    BGR
+        Blue, green, red — no alpha.
+    BGRA
+        Blue, green, red, alpha.
+    RGB
+        Red, green, blue — no alpha.
+    RGBA
+        Red, green, blue, alpha.
+    """
 
     BGR = auto()
     BGRA = auto()
@@ -123,7 +147,25 @@ class ChannelOrder(StrEnum):
 
 @unique
 class PixelOrder(StrEnum):
-    """Order of color components within an interleaved pixel."""
+    """Order of color components within an interleaved pixel.
+
+    Attributes
+    ----------
+    BGRA
+        Blue, green, red, alpha — 8 bits each.
+    BGRX
+        Blue, green, red, unused byte — 8 bits each.
+    RGB_PACKED_565
+        RGB packed into 16 bits (5-6-5).
+    RGB_PACKED_30
+        RGB packed into 32 bits (10-10-10, 2 bits unused).
+    ALPHA_ONLY
+        Single alpha channel.
+    RGBF
+        Red, green, blue — 32-bit float each.
+    RGBAF
+        Red, green, blue, alpha — 32-bit float each.
+    """
 
     BGRA = auto()
     BGRX = auto()
@@ -195,7 +237,33 @@ class PixelOrder(StrEnum):
 
 @dataclass(slots=True, frozen=True)
 class PixelFormatInfo:
-    """Metadata record for a single cairo pixel format."""
+    """Metadata record for a single pixel format.
+
+    Attributes
+    ----------
+    format_value
+        cairo.Format enum value.
+    format_name
+        String name of the format.
+    color_model
+        Logical color model.
+    pixel_order
+        Component order within a pixel.
+    memory_dtype
+        Dtype of the raw memory unit.
+    array_dtype
+        Dtype of the unpacked output array.
+    n_channels
+        Number of meaningful color/alpha channels.
+    is_packed
+        ``True`` if channels are bit-packed into a single memory unit.
+    bits_per_pixel
+        Number of bits per pixel.
+    bytes_per_pixel
+        Number of bytes per pixel.
+    description
+        Human-readable format description.
+    """
 
     format_value: cairo.Format
     format_name: str
@@ -226,7 +294,25 @@ class PixelFormatInfo:
 
 @unique
 class PixelFormat(Enum):
-    """Enumeration of supported cairo pixel formats with associated metadata."""
+    """Supported pixel formats with associated metadata.
+
+    Attributes
+    ----------
+    RGB24
+        RGB24 format.
+    ARGB32
+        ARGB32 format.
+    RGB96F
+        RGB96F format.
+    RGBA128F
+        RGBA128F format.
+    A8
+        A8 format.
+    RGB16_565
+        RGB16_565 format.
+    RGB30
+        RGB30 format.
+    """
 
     RGB24 = PixelFormatInfo(
         format_value=cairo.Format.RGB24,
@@ -425,10 +511,10 @@ class PixelFormat(Enum):
         format_value
             cairo.Format enum value to look up.
 
-        Raises
-        ------
-        ValueError
-            If no format matches ``format_value``.
+        Returns
+        -------
+        Self
+            The matching PixelFormat.
         """
         return cls._lookup_format(format_value, lambda fmt: fmt.format_value, "cairo.Format")
 
@@ -441,10 +527,10 @@ class PixelFormat(Enum):
         format_name
             Format name string to look up.
 
-        Raises
-        ------
-        ValueError
-            If no format matches ``format_name``.
+        Returns
+        -------
+        Self
+            The matching PixelFormat.
         """
         return cls._lookup_format(format_name, lambda fmt: fmt.format_name, "format_name")
 
@@ -453,12 +539,24 @@ class PixelFormat(Enum):
     # --------------------------
     @classmethod
     def get_formats_with_alpha(cls) -> list[Self]:
-        """Return all formats that include an alpha channel."""
+        """Return all formats that include an alpha channel.
+
+        Returns
+        -------
+        list[Self]
+            Formats with an alpha channel.
+        """
         return [fmt for fmt in cls if fmt.has_alpha]
 
     @classmethod
     def get_formats_without_alpha(cls) -> list[Self]:
-        """Return all formats without an alpha channel."""
+        """Return all formats without an alpha channel.
+
+        Returns
+        -------
+        list[Self]
+            Formats without an alpha channel.
+        """
         return [fmt for fmt in cls if not fmt.has_alpha]
 
     @classmethod
@@ -469,17 +567,34 @@ class PixelFormat(Enum):
         ----------
         color_model
             Color model to filter by.
+
+        Returns
+        -------
+        list[Self]
+            Formats matching ``color_model``.
         """
         return [fmt for fmt in cls if fmt.color_model == color_model]
 
     @classmethod
     def get_premultiplied_formats(cls) -> list[Self]:
-        """Return all formats with premultiplied alpha."""
+        """Return all formats with premultiplied alpha.
+
+        Returns
+        -------
+        list[Self]
+            Formats with premultiplied alpha.
+        """
         return [fmt for fmt in cls if fmt.is_premultiplied]
 
     @classmethod
     def get_packed_formats(cls) -> list[Self]:
-        """Return all bit-packed pixel formats."""
+        """Return all bit-packed pixel formats.
+
+        Returns
+        -------
+        list[Self]
+            Bit-packed formats.
+        """
         return [fmt for fmt in cls if fmt.is_packed]
 
     @classmethod
@@ -490,6 +605,11 @@ class PixelFormat(Enum):
         ----------
         dtype
             Array dtype to filter by.
+
+        Returns
+        -------
+        list[Self]
+            Formats whose array dtype matches ``dtype``.
         """
         return [fmt for fmt in cls if fmt.array_dtype == dtype]
 
@@ -501,5 +621,10 @@ class PixelFormat(Enum):
         ----------
         n
             Number of channels to filter by.
+
+        Returns
+        -------
+        list[Self]
+            Formats with ``n`` channels.
         """
         return [fmt for fmt in cls if fmt.n_channels == n]

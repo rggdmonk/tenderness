@@ -43,6 +43,11 @@ class DuplicateChecker:
             Attribute name to check for duplicates.
         transform
             Optional callable to normalize values before comparison (e.g. ``str.lower``).
+
+        Returns
+        -------
+        dict[Any, list[T]]
+            Mapping of duplicate values to the objects that share them.
         """
         grouped = defaultdict(list)
 
@@ -90,10 +95,10 @@ class DuplicateChecker:
         check_fields
             Attribute names that must be unique across all items.
 
-        Raises
-        ------
-        ValueError
-            If any checked field contains duplicate values.
+        Returns
+        -------
+        list[T]
+            Flattened list of all items from the merged iterables.
         """
         combined_list = list(itertools.chain.from_iterable(iterables))
         for field in check_fields:
@@ -113,6 +118,11 @@ class CheckSumUtils:
         ----------
         file_path
             Path to the file to hash.
+
+        Returns
+        -------
+        str
+            SHA-256 hex digest of the file.
 
         Raises
         ------

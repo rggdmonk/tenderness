@@ -24,7 +24,27 @@ from typing import Protocol, Self, runtime_checkable
 
 @unique
 class MatrixTransformType(StrEnum):
-    """Named matrix transformation operations."""
+    """Named matrix transformation operations.
+
+    Attributes
+    ----------
+    TRANSLATE
+        Translation.
+    SCALE
+        Scaling.
+    ROTATE
+        Rotation.
+    SKEW_X
+        Skew along the x-axis.
+    SKEW_Y
+        Skew along the y-axis.
+    ROTATE_AROUND_POINT
+        Rotation around a pivot point.
+    FLIP_HORIZONTAL
+        Horizontal flip.
+    FLIP_VERTICAL
+        Vertical flip.
+    """
 
     # Basic transformations
     TRANSLATE = auto()
@@ -46,11 +66,37 @@ class MatrixTransformerProtocol(Protocol):
     """Protocol for objects that apply matrix transformations."""
 
     def translate(self, tx: float, ty: float) -> Self:
-        """Translate by (tx, ty)."""
+        """Translate by (tx, ty).
+
+        Parameters
+        ----------
+        tx
+            Translation along the x-axis.
+        ty
+            Translation along the y-axis.
+
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
+        """
         ...
 
     def scale(self, sx: float, sy: float) -> Self:
-        """Scale by (sx, sy)."""
+        """Scale by (sx, sy).
+
+        Parameters
+        ----------
+        sx
+            Scale factor along the x-axis.
+        sy
+            Scale factor along the y-axis.
+
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
+        """
         ...
 
     def rotate(self, angle: float, *, degrees: bool = True) -> Self:
@@ -62,6 +108,11 @@ class MatrixTransformerProtocol(Protocol):
             Rotation angle.
         degrees
             Interpret angle as degrees when True, radians when False.
+
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
         """
         ...
 
@@ -74,6 +125,11 @@ class MatrixTransformerProtocol(Protocol):
             Skew angle.
         degrees
             Interpret angle as degrees when True, radians when False.
+
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
         """
         ...
 
@@ -86,6 +142,11 @@ class MatrixTransformerProtocol(Protocol):
             Skew angle.
         degrees
             Interpret angle as degrees when True, radians when False.
+
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
         """
         ...
 
@@ -102,15 +163,42 @@ class MatrixTransformerProtocol(Protocol):
             Y coordinate of the pivot point.
         degrees
             Interpret angle as degrees when True, radians when False.
+
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
         """
         ...
 
     def flip_horizontal(self, cx: float) -> Self:
-        """Flip horizontally around the vertical axis at x = cx."""
+        """Flip horizontally around the vertical axis at x = cx.
+
+        Parameters
+        ----------
+        cx
+            X coordinate of the flip axis.
+
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
+        """
         ...
 
     def flip_vertical(self, cy: float) -> Self:
-        """Flip vertically around the horizontal axis at y = cy."""
+        """Flip vertically around the horizontal axis at y = cy.
+
+        Parameters
+        ----------
+        cy
+            Y coordinate of the flip axis.
+
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
+        """
         ...
 
 
@@ -120,7 +208,13 @@ class TransformDataclassParameter(ABC):
 
     @abstractmethod
     def apply_to(self, transformer: MatrixTransformerProtocol) -> None:
-        """Apply this transformation to transformer."""
+        """Apply this transformation to transformer.
+
+        Parameters
+        ----------
+        transformer
+            Transformer to apply this operation to.
+        """
         ...
 
 
@@ -131,7 +225,7 @@ class TransformDataclassParameter(ABC):
 class TranslateParameters(TransformDataclassParameter):
     """Parameters for a translate transformation.
 
-    Parameters
+    Attributes
     ----------
     tx
         Translation along the x-axis.
@@ -143,7 +237,13 @@ class TranslateParameters(TransformDataclassParameter):
     ty: float = 0.0
 
     def apply_to(self, transformer: MatrixTransformerProtocol) -> None:
-        """Apply translation to transformer."""
+        """Apply translation to transformer.
+
+        Parameters
+        ----------
+        transformer
+            Transformer to apply this operation to.
+        """
         transformer.translate(tx=self.tx, ty=self.ty)
 
 
@@ -151,7 +251,7 @@ class TranslateParameters(TransformDataclassParameter):
 class ScaleParameters(TransformDataclassParameter):
     """Parameters for a scale transformation.
 
-    Parameters
+    Attributes
     ----------
     sx
         Scale factor along the x-axis.
@@ -163,7 +263,13 @@ class ScaleParameters(TransformDataclassParameter):
     sy: float = 1.0
 
     def apply_to(self, transformer: MatrixTransformerProtocol) -> None:
-        """Apply scaling to transformer."""
+        """Apply scaling to transformer.
+
+        Parameters
+        ----------
+        transformer
+            Transformer to apply this operation to.
+        """
         transformer.scale(sx=self.sx, sy=self.sy)
 
 
@@ -171,7 +277,7 @@ class ScaleParameters(TransformDataclassParameter):
 class RotateParameters(TransformDataclassParameter):
     """Parameters for a rotate transformation.
 
-    Parameters
+    Attributes
     ----------
     angle
         Rotation angle.
@@ -183,7 +289,13 @@ class RotateParameters(TransformDataclassParameter):
     degrees: bool = True
 
     def apply_to(self, transformer: MatrixTransformerProtocol) -> None:
-        """Apply rotation to transformer."""
+        """Apply rotation to transformer.
+
+        Parameters
+        ----------
+        transformer
+            Transformer to apply this operation to.
+        """
         transformer.rotate(angle=self.angle, degrees=self.degrees)
 
 
@@ -194,7 +306,7 @@ class RotateParameters(TransformDataclassParameter):
 class SkewXParameters(TransformDataclassParameter):
     """Parameters for a skew-x transformation.
 
-    Parameters
+    Attributes
     ----------
     angle
         Skew angle.
@@ -206,7 +318,13 @@ class SkewXParameters(TransformDataclassParameter):
     degrees: bool = True
 
     def apply_to(self, transformer: MatrixTransformerProtocol) -> None:
-        """Apply x-axis skew to transformer."""
+        """Apply x-axis skew to transformer.
+
+        Parameters
+        ----------
+        transformer
+            Transformer to apply this operation to.
+        """
         transformer.skew_x(angle=self.angle, degrees=self.degrees)
 
 
@@ -214,7 +332,7 @@ class SkewXParameters(TransformDataclassParameter):
 class SkewYParameters(TransformDataclassParameter):
     """Parameters for a skew-y transformation.
 
-    Parameters
+    Attributes
     ----------
     angle
         Skew angle.
@@ -226,7 +344,13 @@ class SkewYParameters(TransformDataclassParameter):
     degrees: bool = True
 
     def apply_to(self, transformer: MatrixTransformerProtocol) -> None:
-        """Apply y-axis skew to transformer."""
+        """Apply y-axis skew to transformer.
+
+        Parameters
+        ----------
+        transformer
+            Transformer to apply this operation to.
+        """
         transformer.skew_y(angle=self.angle, degrees=self.degrees)
 
 
@@ -237,7 +361,7 @@ class SkewYParameters(TransformDataclassParameter):
 class RotateAroundPointParameters(TransformDataclassParameter):
     """Parameters for a rotate-around-point transformation.
 
-    Parameters
+    Attributes
     ----------
     angle
         Rotation angle.
@@ -255,7 +379,13 @@ class RotateAroundPointParameters(TransformDataclassParameter):
     degrees: bool = True
 
     def apply_to(self, transformer: MatrixTransformerProtocol) -> None:
-        """Apply rotation around point to transformer."""
+        """Apply rotation around point to transformer.
+
+        Parameters
+        ----------
+        transformer
+            Transformer to apply this operation to.
+        """
         transformer.rotate_around_point(angle=self.angle, cx=self.cx, cy=self.cy, degrees=self.degrees)
 
 
@@ -263,7 +393,7 @@ class RotateAroundPointParameters(TransformDataclassParameter):
 class FlipHorizontalParameters(TransformDataclassParameter):
     """Parameters for a horizontal flip transformation.
 
-    Parameters
+    Attributes
     ----------
     cx
         X coordinate of the flip axis.
@@ -272,7 +402,13 @@ class FlipHorizontalParameters(TransformDataclassParameter):
     cx: float = 0.0
 
     def apply_to(self, transformer: MatrixTransformerProtocol) -> None:
-        """Apply horizontal flip to transformer."""
+        """Apply horizontal flip to transformer.
+
+        Parameters
+        ----------
+        transformer
+            Transformer to apply this operation to.
+        """
         transformer.flip_horizontal(cx=self.cx)
 
 
@@ -280,7 +416,7 @@ class FlipHorizontalParameters(TransformDataclassParameter):
 class FlipVerticalParameters(TransformDataclassParameter):
     """Parameters for a vertical flip transformation.
 
-    Parameters
+    Attributes
     ----------
     cy
         Y coordinate of the flip axis.
@@ -289,5 +425,11 @@ class FlipVerticalParameters(TransformDataclassParameter):
     cy: float = 0.0
 
     def apply_to(self, transformer: MatrixTransformerProtocol) -> None:
-        """Apply vertical flip to transformer."""
+        """Apply vertical flip to transformer.
+
+        Parameters
+        ----------
+        transformer
+            Transformer to apply this operation to.
+        """
         transformer.flip_vertical(cy=self.cy)

@@ -16,7 +16,6 @@
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass, field
 from enum import StrEnum, auto, unique
 from typing import TYPE_CHECKING
@@ -29,24 +28,34 @@ from tenderness.core.image_formats import ImageFormat
 if TYPE_CHECKING:
     from tenderness.core.geometry import Rectangle
 
-logger = logging.getLogger(__name__)
-
 
 @unique
 class ImageScaleMode(StrEnum):
-    """Scaling behavior when placing an image into a destination rectangle."""
+    """Scaling behavior when placing an image into a destination rectangle.
 
-    STRETCH = auto()  # scale to fill dest_rect exactly, aspect ratio not preserved
-    FIT = auto()  # uniform scale to fit inside dest_rect (may letterbox)
-    FILL = auto()  # uniform scale to fill dest_rect entirely, crop excess
-    NONE = auto()  # no scaling; placed at dest_rect origin at native pixel size
+    Attributes
+    ----------
+    STRETCH
+        Scale to fill the destination rectangle exactly; aspect ratio not preserved.
+    FIT
+        Uniform scale to fit inside the destination rectangle; may letterbox.
+    FILL
+        Uniform scale to fill the destination rectangle entirely; excess is cropped.
+    NONE
+        No scaling; placed at the destination origin at native pixel size.
+    """
+
+    STRETCH = auto()
+    FIT = auto()
+    FILL = auto()
+    NONE = auto()
 
 
 @dataclass(slots=True)
 class ImagePlacerParameters:
     """Parameters for placing an image onto a cairo context.
 
-    Parameters
+    Attributes
     ----------
     path_to_image
         Path or file-like object for the source image.

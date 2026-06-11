@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* ============================================================
+     RESET & BASE
+     box-sizing on everything so padding doesn't blow out widths.
+     Body is transparent so the component inherits the docs page
+     background — important when embedded as an <iframe>.
+     ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 10px;
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 13px;
+    background: #fff;   /* overridden at runtime by the theme-sync script */
+    color: #1a1a1a;
+  }
+
+  /* ============================================================
+     ROOT LAYOUT
+     Vertical stack: controls → canvas → info bar.
+     gap keeps consistent spacing between every section.
+     ============================================================ */
+  .bv-root { display: flex; flex-direction: column; gap: 8px; }
+
+  /* ============================================================
+     CONTROLS BAR
+     Horizontal flex row of toggle-button groups.
+     flex-wrap lets it collapse to multiple lines on narrow screens.
+     Groups are: Block layers | Text levels | Box type (logical/ink).
+     Which groups appear depends on what data was loaded.
+     ============================================================ */
+  .bv-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* One labelled cluster of toggle buttons (e.g. "Block", "Text") */
+  .bv-group {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+  }
+
+  /* Small uppercase label that names a group */
+  .bv-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0.45;
+    margin-right: 3px;
+    white-space: nowrap;
+  }
+
+  /* Thin vertical rule that visually separates groups */
+  .bv-sep {
+    width: 1px;
+    height: 18px;
+    background: currentColor;
+    opacity: 0.12;
+  }
+
+  /* ============================================================
+     TOGGLE BUTTONS
+     --c  is set per-button and carries the layer's hex colour.
+     It is used for the border, the text colour, and the tinted
+     background fill when the button is active (.on).
+
+     Off state:  low opacity, transparent background.
+     On  state:  full opacity, 15 % colour tint on background.
+     ============================================================ */
+  .bv-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1.5px solid var(--c);
+    background: transparent;
+    color: var(--c);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    opacity: 0.3;
+    transition: opacity 0.12s, background 0.12s;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+
+  .bv-btn.on {
+    background: color-mix(in srgb, var(--c) 15%, transparent);
+    opacity: 1;
+  }
+
+  /* Box-type buttons (Logical / Ink) are grey — raise base opacity so they
+     stay readable without a vivid layer colour driving contrast. */
+  .bv-btn--neutral        { opacity: 0.55; border-width: 1.5px; }
+  .bv-btn--neutral.on     { opacity: 1; }
+
+  /* Small coloured square swatch inside a layer button */
+  .bv-btn .swatch {
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    background: var(--c);
+    flex-shrink: 0;
+  }
+
+  /* ============================================================
+     CANVAS WRAPPER
+     inline-block so the wrapper never stretches wider than the
+     image; overflow:hidden clips the border-radius cleanly.
+     width:100% fills the iframe / container width.
+     ============================================================ */
+  .bv-canvas-wrap {
+    line-height: 0;         /* removes the phantom descender gap below the canvas */
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(128,128,128,0.18);
+    display: inline-block;
+    width: 100%;
+  }
+
+  .bv-canvas-wrap canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    cursor: crosshair;
+  }
+
+  /* ============================================================
+     INFO BAR
+     Sits below the canvas. Hover populates it; click locks it.
+
+     Default (no hover, not pinned): faint hint text.
+     Hover:  shows level, box type, text/name, dimensions, and corner coords.
+     Pinned: .pinned class adds a subtle tinted background so the
+             user can see that the value is locked.
+     ============================================================ */
+  .bv-info {
+    font-size: 12px;
+    line-height: 1.5;
+    min-height: 1.6em;      /* stable height — no layout shift when text appears */
+    opacity: 0.7;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: background 0.1s;
+  }
+
+  /* Visual indicator that info is pinned by a click */
+  .bv-info.pinned {
+    background: rgba(128,128,128,0.08);
+    opacity: 1;
+  }
+
+  /* ============================================================
+     FLOATING TOOLTIP
+     Follows the cursor for quick colour-coded layer identification.
+     position:fixed keeps it above the page regardless of scroll.
+     pointer-events:none ensures it never blocks mouse events on
+     the canvas underneath.
+     ============================================================ */
+  .bv-tooltip {
+    position: fixed;
+    padding: 4px 8px;
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    font-size: 12px;
+    border-radius: 4px;
+    pointer-events: none;
+    display: none;
+    z-index: 9999;
+    max-width: 320px;
+    white-space: normal;
+    line-height: 1.45;
+  }
+
+  .bv-tooltip strong {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    opacity: 0.55;
+    margin-bottom: 2px;
+  }
+</style>
+</head>
+<body>
+<div id="__bv_standalone__"></div>
+<div class="bv-tooltip" id="__bv_tip__"></div>
+
+<script>
+/* ============================================================
+   THEME SYNC
+   Mirrors the parent page's background and text colour via computed
+   styles so the component blends in regardless of the host framework.
+   Same-origin iframes can access window.parent.document directly.
+   Falls back silently (cross-origin or file://) using OS colour-scheme.
+   ============================================================ */
+(function () {
+  try {
+    const parentBody = window.parent.document.body;
+
+    function _applyTheme() {
+      const s = window.getComputedStyle(parentBody);
+      document.body.style.background = s.backgroundColor;
+      document.body.style.color      = s.color;
+    }
+
+    _applyTheme();
+
+    // Re-apply if the parent changes class/attribute (theme toggle).
+    new MutationObserver(_applyTheme)
+      .observe(parentBody, { attributes: true, attributeFilter: ['class', 'data-theme', 'data-md-color-scheme'] });
+  } catch (_) {
+    // Cross-origin fallback — use OS preference.
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.body.style.background = '#1e2029';
+      document.body.style.color      = '#e0e0e0';
+    }
+  }
+})();
+
+
+/* ============================================================
+   COLOUR PALETTE
+   Values are kept in sync with the Python drawing utilities:
+     Text → src/tenderness/bounding_boxes/draw_text_bboxes.py  (TextDrawConfig)
+
+   If Python defaults change, update the hex strings here too.
+   ============================================================ */
+
+// One entry per text granularity level.
+// key matches the URL param and JSON file name convention (bboxes_<key>.json).
+const TEXT_LEVELS = {
+  char:    { label: 'Char',    color: '#ff0000' },   // red         rgb(255,   0,   0)
+  cluster: { label: 'Cluster', color: '#ffa500' },   // orange      rgb(255, 165,   0)
+  run:     { label: 'Run',     color: '#00c800' },   // green       rgb(  0, 200,   0)
+  line:    { label: 'Line',    color: '#0000ff' },   // blue        rgb(  0,   0, 255)
+  layout:  { label: 'Layout',  color: '#800080' },   // purple      rgb(128,   0, 128)
+};
+
+
+/* ============================================================
+   CANVAS DRAWING HELPERS
+   Pure functions — no DOM access, no side-effects.
+   ============================================================ */
+
+// Convert a #rrggbb hex colour + 0-1 alpha to a CSS rgba() string.
+function _rgba(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// Draw a filled + outlined quadrilateral.
+// bbox must have top_left / top_right / bottom_right / bottom_left as [x, y].
+// dashed=true uses a 3-3 dash for the outline (convention: ink bboxes).
+function _drawQuad(ctx, bbox, color, dashed) {
+  const pts = [bbox.top_left, bbox.top_right, bbox.bottom_right, bbox.bottom_left];
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < 4; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.closePath();
+  ctx.fillStyle   = _rgba(color, 0.12);
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = 1.5;
+  ctx.setLineDash(dashed ? [3, 3] : []);
+  ctx.stroke();
+  ctx.setLineDash([]);   // always reset so later draws aren't affected
+}
+
+// Return true if the canvas-space point (px, py) is inside the quad.
+// Relies on the 2D canvas hit-test (isPointInPath) rather than a manual
+// winding-number algorithm — simpler and handles non-convex shapes too.
+function _pointInQuad(ctx, px, py, bbox) {
+  const pts = [bbox.top_left, bbox.top_right, bbox.bottom_right, bbox.bottom_left];
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < 4; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.closePath();
+  return ctx.isPointInPath(px, py);
+}
+
+// "width × height" string derived from a bbox — used in the info bar.
+function _dims(bbox) {
+  const w = Math.round(bbox.top_right[0]  - bbox.top_left[0]);
+  const h = Math.round(bbox.bottom_left[1] - bbox.top_left[1]);
+  return `${w} × ${h}`;
+}
+
+// Format one corner point as "(x, y)" with integer rounding.
+function _pt(p) { return `(${Math.round(p[0])}, ${Math.round(p[1])})`; }
+
+// Escape user-supplied strings before inserting into innerHTML.
+// Prevents XSS if bbox JSON contains HTML tags in text or name fields.
+function _esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+// All four corners on one line: "TL: (x,y)  TR: (x,y)  BR: (x,y)  BL: (x,y)"
+// &ensp; is a fixed-width HTML space — plain spaces collapse to one in innerHTML.
+function _corners(bbox) {
+  return `TL:&ensp;${_pt(bbox.top_left)}`
+       + `&ensp;&ensp;TR:&ensp;${_pt(bbox.top_right)}`
+       + `&ensp;&ensp;BR:&ensp;${_pt(bbox.bottom_right)}`
+       + `&ensp;&ensp;BL:&ensp;${_pt(bbox.bottom_left)}`;
+}
+
+
+/* ============================================================
+   UNIFIED RENDERER
+
+   @param {string|HTMLElement} container
+       CSS selector or DOM element to render into.
+   @param {{
+     imageSrc:   string,       — URL of the source image
+     bboxes?: {
+       char?:    string,       — URL to bboxes_char.json
+       cluster?: string,
+       run?:     string,
+       line?:    string,
+       layout?:  string,
+     },
+     defaultOn?: string[],     — layer keys on by default; omit → all on
+                                 e.g. ['char', 'line']
+   }} config
+   ============================================================ */
+async function renderBboxes(container, config) {
+  const root = typeof container === 'string'
+    ? document.querySelector(container)
+    : container;
+  if (!root) throw new Error('renderBboxes: container not found');
+
+  root.innerHTML = '';
+  root.className = 'bv-root';
+
+  /* ── resolve defaultOn ─────────────────────────────────────── */
+  // _defaultOn is null when no preference is given (all layers start on).
+  // Otherwise it's a Set of lowercase strings matched against both
+  // the layer key (e.g. 'char') and its display label (e.g. 'Char').
+  const _defaultOn = config.defaultOn
+    ? new Set(config.defaultOn.map(s => s.toLowerCase()))
+    : null;
+
+  function _isOn(key, label) {
+    if (!_defaultOn) return true;
+    return _defaultOn.has(key.toLowerCase()) || _defaultOn.has(label.toLowerCase());
+  }
+
+  /* ── fetch all data in parallel with the image load ─────────── */
+  const textLevelKeys = ['char', 'cluster', 'run', 'line', 'layout'];
+  const bboxCfg       = config.bboxes || {};
+
+  let loadedImg, textResults;
+  try {
+    [loadedImg, ...textResults] = await Promise.all([
+      // Image
+      new Promise((res, rej) => {
+        const img = new Image();
+        img.onload = () => res(img);
+        img.onerror = () => rej(new Error(`Failed to load image: ${config.imageSrc}`));
+        img.src = config.imageSrc;
+      }),
+      // One text-level JSON per key (resolves to null when URL not provided)
+      ...textLevelKeys.map(k =>
+        bboxCfg[k]
+          ? fetch(bboxCfg[k]).then(r => r.json()).catch(() => null)
+          : Promise.resolve(null)
+      ),
+    ]);
+  } catch (err) {
+    root.textContent = `Error: ${err.message}`;
+    return;
+  }
+
+  /* ── build a flat layers array ──────────────────────────────── */
+  // Each layer: kind:'text' — items have .logical_bbox, .ink_bbox (opt), .text, …
+  const layers = [];
+
+  const textData = {};
+  textLevelKeys.forEach((k, i) => {
+    const raw = textResults[i];
+    if (raw != null) textData[k] = Array.isArray(raw) ? raw : [raw];
+  });
+  for (const k of textLevelKeys) {
+    if (!textData[k]) continue;
+    const { label, color } = TEXT_LEVELS[k];
+    layers.push({ key: k, label, color, kind: 'text', items: textData[k] });
+  }
+
+  if (!layers.length) { root.textContent = 'No bbox data to display.'; return; }
+
+  /* ── layer visibility state ─────────────────────────────────── */
+  const visible = {};
+  layers.forEach(l => { visible[l.key] = _isOn(l.key, l.label); });
+
+  /* ── box-type state ─────────────────────────────────────────── */
+  const kinds   = { logical: true, ink: true };
+  const hasText = layers.some(l => l.kind === 'text');
+
+  /* ── build controls ─────────────────────────────────────────── */
+  const controls = document.createElement('div');
+  controls.className = 'bv-controls';
+
+  // Append a labelled group of buttons. label='' skips the label element.
+  function _addGroup(label, buttons) {
+    const g = document.createElement('div');
+    g.className = 'bv-group';
+    if (label) {
+      const l = document.createElement('span');
+      l.className = 'bv-label';
+      l.textContent = label;
+      g.appendChild(l);
+    }
+    buttons.forEach(b => g.appendChild(b));
+    controls.appendChild(g);
+  }
+
+  // Create one styled toggle button.
+  // color='#888' = neutral grey (no swatch) used for box-type buttons.
+  function _btn(text, color, initialOn, onClick) {
+    const neutral = color === '#888';
+    const b = document.createElement('button');
+    b.className = 'bv-btn' + (neutral ? ' bv-btn--neutral' : '') + (initialOn ? ' on' : '');
+    b.style.setProperty('--c', color);
+    b.innerHTML = neutral ? text : `<span class="swatch"></span>${text}`;
+    b.addEventListener('click', () => { onClick(b); redraw(); });
+    return b;
+  }
+
+  // Text group + box-type group
+  if (hasText) {
+    _addGroup('Text level', layers.filter(l => l.kind === 'text').map(l =>
+      _btn(l.label, l.color, visible[l.key], b => {
+        visible[l.key] = !visible[l.key];
+        b.classList.toggle('on', visible[l.key]);
+      })
+    ));
+
+    const s2 = document.createElement('div'); s2.className = 'bv-sep';
+    controls.appendChild(s2);
+
+    _addGroup('Box type', ['logical', 'ink'].map(k =>
+      _btn(k[0].toUpperCase() + k.slice(1), '#888', kinds[k], b => {
+        kinds[k] = !kinds[k];
+        b.classList.toggle('on', kinds[k]);
+      })
+    ));
+  }
+
+  root.appendChild(controls);
+
+  /* ── canvas ─────────────────────────────────────────────────── */
+  const wrap   = document.createElement('div');
+  wrap.className = 'bv-canvas-wrap';
+  const canvas = document.createElement('canvas');
+  wrap.appendChild(canvas);
+  root.appendChild(wrap);
+
+  const ctx     = canvas.getContext('2d');
+  canvas.width  = loadedImg.naturalWidth;
+  canvas.height = loadedImg.naturalHeight;
+
+  /* ── info bar ────────────────────────────────────────────────── */
+  // Hover fills it with details of the hovered element.
+  // A click locks ("pins") the content so it persists after the mouse leaves.
+  // Clicking the same spot again, or clicking empty space, unpins.
+  const infoBar = document.createElement('div');
+  infoBar.className = 'bv-info';
+  infoBar.textContent = 'Hover to inspect · click to pin';
+  root.appendChild(infoBar);
+
+  let pinnedHTML = null;   // null = no pin; string = pinned HTML content
+
+  /* ── tooltip ─────────────────────────────────────────────────── */
+  // Re-use a single tooltip element across all renderBboxes calls
+  // on the same page to avoid creating multiple orphaned tooltips.
+  let tip = document.getElementById('__bv_tip__');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.className = 'bv-tooltip';
+    document.body.appendChild(tip);
+  }
+
+  /* ── draw ────────────────────────────────────────────────────── */
+  function redraw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(loadedImg, 0, 0);
+
+    for (const layer of layers) {
+      if (!visible[layer.key]) continue;
+      for (const item of layer.items) {
+        if (kinds.logical && item.logical_bbox) _drawQuad(ctx, item.logical_bbox, layer.color, false);
+        if (kinds.ink     && item.ink_bbox)     _drawQuad(ctx, item.ink_bbox,     layer.color, true);
+      }
+    }
+  }
+
+  redraw();
+
+  /* ── hit testing ─────────────────────────────────────────────── */
+  // Walk layers from topmost (end of array) to bottommost and return
+  // the first layer + item whose bbox contains the canvas-space point.
+  function _hitTest(px, py) {
+    for (let i = layers.length - 1; i >= 0; i--) {
+      const layer = layers[i];
+      if (!visible[layer.key]) continue;
+      for (const item of layer.items) {
+        const bbox = (kinds.logical && item.logical_bbox) ? item.logical_bbox
+                   : (kinds.ink     && item.ink_bbox)     ? item.ink_bbox
+                   : null;
+        if (bbox && _pointInQuad(ctx, px, py, bbox)) return { layer, item };
+      }
+    }
+    return null;
+  }
+
+  // Build the info bar HTML string for a given hit result.
+  function _describe(hit) {
+    const { layer, item } = hit;
+    const color = layer.color;
+    const sep = ' &nbsp;·&nbsp; ';
+
+    const bbox = (kinds.logical && item.logical_bbox) ? item.logical_bbox : item.ink_bbox;
+    const type = (kinds.logical && item.logical_bbox) ? 'logical' : 'ink';
+    const rawText = item.text ?? '';
+    const displayText = _esc(rawText.length > 60 ? rawText.slice(0, 60) + '…' : rawText);
+    let s = `Level: <span style="color:${color}"><strong>${_esc(layer.label)}</strong></span>`
+           + `${sep}Type: ${type}`
+           + `${sep}Text: &quot;${displayText}&quot;`
+           + `${sep}Size: ${_dims(bbox)}`;
+    if (item.resolved_direction) s += `${sep}Direction: ${item.resolved_direction}`;
+    if (item.is_paragraph_start)  s += `${sep}Paragraph start: True`;
+    s += `${sep}${_corners(bbox)}`;
+    return s;
+  }
+
+  /* ── mouse events ────────────────────────────────────────────── */
+
+  // Scale a viewport-space mouse position to canvas-space.
+  function _canvasPos(e) {
+    const r = canvas.getBoundingClientRect();
+    return [
+      (e.clientX - r.left) * (canvas.width  / r.width),
+      (e.clientY - r.top)  * (canvas.height / r.height),
+    ];
+  }
+
+  // RAF throttle: store the latest event, process at most once per frame.
+  // Prevents O(n) hit-testing from running faster than the screen refreshes.
+  let _rafPending = false;
+  let _lastMoveEvent = null;
+
+  canvas.addEventListener('mousemove', e => {
+    _lastMoveEvent = e;
+    if (_rafPending) return;
+    _rafPending = true;
+    requestAnimationFrame(() => {
+      _rafPending = false;
+      const ev = _lastMoveEvent;
+      const [px, py] = _canvasPos(ev);
+      const hit = _hitTest(px, py);
+
+      if (hit) {
+        const desc = _describe(hit);
+        const tipBbox = (kinds.logical && hit.item.logical_bbox) ? hit.item.logical_bbox : hit.item.ink_bbox;
+        tip.style.display = 'block';
+        tip.style.left    = (ev.clientX + 14) + 'px';
+        tip.style.top     = (ev.clientY -  8) + 'px';
+        tip.innerHTML = `<strong style="color:${hit.layer.color}">${_esc(hit.layer.label)}</strong>`
+                      + _esc(hit.item.text ?? '')
+                      + (tipBbox ? `<br><span style="opacity:0.6;font-size:11px">${_corners(tipBbox)}</span>` : '');
+        if (!pinnedHTML) infoBar.innerHTML = desc;
+      } else {
+        tip.style.display = 'none';
+        if (!pinnedHTML) infoBar.textContent = 'Hover to inspect · click to pin';
+      }
+    });
+  });
+
+  canvas.addEventListener('click', e => {
+    const [px, py] = _canvasPos(e);
+    const hit = _hitTest(px, py);
+
+    if (hit) {
+      const desc = _describe(hit);
+      if (pinnedHTML === desc) {
+        // Same spot clicked again → unpin
+        pinnedHTML = null;
+        infoBar.classList.remove('pinned');
+        infoBar.innerHTML = desc;   // still show the value, just not locked
+      } else {
+        // Pin this value
+        pinnedHTML = desc;
+        infoBar.innerHTML = desc;
+        infoBar.classList.add('pinned');
+      }
+    } else {
+      // Click on empty area → always unpin
+      pinnedHTML = null;
+      infoBar.classList.remove('pinned');
+      infoBar.textContent = 'Hover to inspect · click to pin';
+    }
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    tip.style.display = 'none';
+    if (!pinnedHTML) infoBar.textContent = 'Hover to inspect · click to pin';
+  });
+}
+
+
+/* ============================================================
+   STANDALONE MODE
+   When this file is opened directly or loaded as an <iframe>,
+   configuration comes from URL query parameters.
+
+   Required:
+     image  — URL of the source image
+
+   Text bbox URLs (any combination):
+     char, cluster, run, line, layout
+
+   Display control:
+     on  — comma-separated layer keys to enable by default
+           (omit to enable all); e.g. "char,line"
+
+   Example:
+     bbox_visualizer.html?image=…&char=…&line=…&on=char,line
+   ============================================================ */
+(function () {
+  const p     = new URLSearchParams(location.search);
+  const image = p.get('image');
+  if (!image) return;   // nothing to render without an image
+
+  const on = p.get('on');
+  renderBboxes('#__bv_standalone__', {
+    imageSrc: image,
+    bboxes: {
+      char:    p.get('char')    || undefined,
+      cluster: p.get('cluster') || undefined,
+      run:     p.get('run')     || undefined,
+      line:    p.get('line')    || undefined,
+      layout:  p.get('layout')  || undefined,
+    },
+    defaultOn: on ? on.split(',').map(s => s.trim()) : undefined,
+  });
+})();
+</script>
+</body>
+</html>

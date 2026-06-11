@@ -37,20 +37,20 @@ logger = logging.getLogger(__name__)
 class FontFileDownloader:
     """HTTP downloader for font files with retry, backoff, and parallel support.
 
-    Parameters
+    Attributes
     ----------
-    timeout
-        Request timeout in seconds.
-    max_retries
-        Maximum number of download attempts per file.
-    backoff_base
-        Base for exponential backoff between retries.
-    delay_between
-        Seconds to wait between parallel download submissions.
-    max_workers
-        Maximum number of concurrent download threads.
-    session
-        Requests session to use; a default session is created when ``None``.
+    DEFAULT_TIMEOUT
+        Default request timeout in seconds.
+    DEFAULT_MAX_RETRIES
+        Default maximum number of download attempts per file.
+    DEFAULT_BACKOFF_BASE
+        Default base for exponential backoff between retries.
+    DEFAULT_DELAY_BETWEEN
+        Default seconds to wait between parallel download submissions.
+    DEFAULT_MAX_WORKERS
+        Default maximum number of concurrent download threads.
+    CHUNK_SIZE
+        Byte size of each streamed chunk when writing to disk.
     """
 
     DEFAULT_TIMEOUT = 30
@@ -70,6 +70,23 @@ class FontFileDownloader:
         max_workers: int = DEFAULT_MAX_WORKERS,
         session: requests.Session | None = None,
     ) -> None:
+        """Initialize FontFileDownloader.
+
+        Parameters
+        ----------
+        timeout
+            Request timeout in seconds.
+        max_retries
+            Maximum number of download attempts per file.
+        backoff_base
+            Base for exponential backoff between retries.
+        delay_between
+            Seconds to wait between parallel download submissions.
+        max_workers
+            Maximum number of concurrent download threads.
+        session
+            Requests session to use; a default session is created when ``None``.
+        """
         self.timeout = timeout
         self.max_retries = max_retries
         self.backoff_base = backoff_base
@@ -86,6 +103,11 @@ class FontFileDownloader:
             Download source specifying the URL and target file name.
         output_dir
             Directory to save the downloaded file.
+
+        Returns
+        -------
+        FontFileDownloadResult
+            Result with success status, output path, and SHA-256 checksum.
         """
         output_dir = output_dir.resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -133,6 +155,11 @@ class FontFileDownloader:
             List of download sources; duplicate URLs or file names are rejected.
         output_dir
             Directory to save the downloaded files.
+
+        Returns
+        -------
+        list[FontFileDownloadResult]
+            One result per source, in completion order.
         """
         # validate no duplicates in sources before starting downloads
         sources = DuplicateChecker.validate(sources, check_fields=["url", "file_name"])
@@ -175,7 +202,21 @@ class FontFileDownloader:
         return results
 
     def _fetch_to_disk(self, url: str, dest_path: pathlib.Path) -> None:
-        """Stream a single URL to a .part file, then atomically rename on success."""
+        """Stream a single URL to a .part file, then atomically rename on success.
+
+        Parameters
+        ----------
+        url
+            URL to download.
+        dest_path
+            Final destination path for the downloaded file.
+
+        Raises
+        ------
+        Exception
+            Re-raises any exception from the HTTP request or disk write after
+            cleaning up the partial file.
+        """
         tmp_path = dest_path.with_suffix(dest_path.suffix + ".part")
         try:
             with self._session.get(url, stream=True, timeout=self.timeout) as resp:

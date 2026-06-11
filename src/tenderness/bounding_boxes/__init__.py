@@ -15,34 +15,36 @@
 
 from tenderness.bounding_boxes.bounding_boxes_schema import (
     BoundingBox,
-    BoundingBoxStrategy,
     BoundingBoxType,
     BoundingBoxWithInk,
     CharBBox,
     ClusterBBox,
     LayoutBBox,
-    LayoutBBoxCollection,
     LineBBox,
+    Quadrilateral,
     RunBBox,
-    Tetragon,
+    TextBoundingBoxes,
 )
-from tenderness.bounding_boxes.draw_bounding_boxes import DrawConfig, ImageBoundingBoxDrawer, SVGBoundingBoxDrawer
+from tenderness.bounding_boxes.draw_text_bboxes import (
+    ImageTextBoundingBoxDrawer,
+    SVGTextBoundingBoxDrawer,
+    TextDrawConfig,
+)
 from tenderness.bounding_boxes.text_bounding_box_extractor import TextBoundingBoxExtractor
 
 __all__ = [
     "BoundingBox",
-    "BoundingBoxStrategy",
     "BoundingBoxType",
     "BoundingBoxWithInk",
     "CharBBox",
     "ClusterBBox",
-    "DrawConfig",
-    "ImageBoundingBoxDrawer",
+    "ImageTextBoundingBoxDrawer",
     "LayoutBBox",
-    "LayoutBBoxCollection",
     "LineBBox",
+    "Quadrilateral",
     "RunBBox",
-    "SVGBoundingBoxDrawer",
-    "Tetragon",
+    "SVGTextBoundingBoxDrawer",
     "TextBoundingBoxExtractor",
+    "TextBoundingBoxes",
+    "TextDrawConfig",
 ]

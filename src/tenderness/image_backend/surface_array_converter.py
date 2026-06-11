@@ -16,7 +16,6 @@
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
 from enum import StrEnum, auto, unique
 from typing import assert_never
@@ -32,12 +31,18 @@ from tenderness.cairo_backend.surface_configuration import (
     SVGSurfaceConfig,
 )
 
-logger = logging.getLogger(__name__)
-
 
 @unique
 class SurfaceArrayBackend(StrEnum):
-    """Backend for surface-to-array conversion."""
+    """Backend for surface-to-array conversion.
+
+    Attributes
+    ----------
+    NUMPY
+        Produce a numpy array.
+    TORCH
+        Produce a PyTorch tensor.
+    """
 
     NUMPY = auto()
     TORCH = auto()
@@ -45,16 +50,22 @@ class SurfaceArrayBackend(StrEnum):
 
 @dataclass(slots=True)
 class SurfaceArrayResult:
-    """Array result from a cairo surface conversion.
+    """Array result from a surface conversion.
 
-    Notes
-    -----
-    ``channel_order`` is ``None`` for formats where the concept does not apply
-    (packed formats: RGB16_565, RGB30; and A8).
-
-    ``image_array`` is a mutable numpy array. When ``is_copy=False``, the array
-    is a view into Cairo's surface buffer — the surface must remain alive and
-    unmodified for as long as the array is in use.
+    Attributes
+    ----------
+    backend
+        Array backend used to produce the result.
+    image_array
+        The converted array. When ``is_copy=False``, this is a view into the
+        surface buffer — the surface must remain alive and unmodified while in use.
+    channel_order
+        Channel ordering of the array; ``None`` for packed formats (RGB16_565,
+        RGB30) and A8 where the concept does not apply.
+    pixel_format
+        Pixel format of the source surface.
+    is_copy
+        ``True`` when the array owns its data; ``False`` when it is a zero-copy view.
     """
 
     backend: SurfaceArrayBackend
@@ -90,7 +101,7 @@ class SurfaceArrayResult:
 class SurfaceArrayConverterParameters:
     """Parameters for surface-to-array conversion.
 
-    Parameters
+    Attributes
     ----------
     channel_order
         Desired channel ordering in the output array; format-dependent.
@@ -127,6 +138,11 @@ class SurfaceArrayConverter:
             Configuration describing the surface format.
         surface_array_converter_params
             Conversion parameters; uses defaults when ``None``.
+
+        Returns
+        -------
+        SurfaceArrayResult
+            Converted array result.
 
         Raises
         ------
@@ -204,6 +220,11 @@ class SurfaceArrayConverter:
             Desired channel ordering; uses the format's native order when ``None``.
         copy
             Return a copy when ``True``, a zero-copy view when ``False``.
+
+        Returns
+        -------
+        SurfaceArrayResult
+            Converted array result backed by numpy.
         """
         surface.flush()
 

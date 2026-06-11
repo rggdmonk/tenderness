@@ -39,18 +39,28 @@ class MinimalFlexBoxTemplateFlow(MinimalFlexBoxTemplateBase):
     ) -> MinimalFlexNode:
         """Horizontal flow of columns. Height stretches to fill the container.
 
-        *specs*: ``int`` → that many equal-stretch columns;
-        ``list`` where ``float`` → fixed pixel width, ``None`` → equal flex-grow share.
-
         ::
 
             specs = [80.0, None, 60.0]      specs = 3
 
             ┌──────┬──────────┬─────┐       ┌───────┬───────┬───────┐
-            │ 80px │  stretch │ 60px│       │ col_0 │ col_1 │ col_2 │
+            │  80  │  stretch │  60 │       │ col_0 │ col_1 │ col_2 │
             └──────┴──────────┴─────┘       └───────┴───────┴───────┘
 
-        Returns one rectangle per column, left-to-right.
+        Parameters
+        ----------
+        specs
+            ``int`` → that many equal-stretch columns;
+            ``list`` where ``float`` → fixed width, ``None`` → equal flex-grow share.
+        gap
+            Gap between columns.
+        names
+            Name list indexed left-to-right; ``None`` uses generated defaults (``col_0``, …).
+
+        Returns
+        -------
+        MinimalFlexNode
+            Root ROW container with one child node per column.
         """
         props = FlexContainerProperties(direction=FlexDirection.ROW, col_gap=gap)
         resolved: list[float | None] = [None] * specs if isinstance(specs, int) else specs
@@ -78,22 +88,32 @@ class MinimalFlexBoxTemplateFlow(MinimalFlexBoxTemplateBase):
     ) -> MinimalFlexNode:
         """Vertical flow of rows. Width stretches to fill the container.
 
-        *specs*: ``int`` → that many equal-stretch rows;
-        ``list`` where ``float`` → fixed pixel height, ``None`` → equal flex-grow share.
-
         ::
 
             specs = [40.0, None, 30.0]      specs = 3
 
             ┌───────────┐                   ┌───────────┐
-            │   40px    │                   │   row_0   │
+            │    40     │                   │   row_0   │
             ├───────────┤                   ├───────────┤
             │  stretch  │                   │   row_1   │
             ├───────────┤                   ├───────────┤
-            │   30px    │                   │   row_2   │
+            │    30     │                   │   row_2   │
             └───────────┘                   └───────────┘
 
-        Returns one rectangle per row, top-to-bottom.
+        Parameters
+        ----------
+        specs
+            ``int`` → that many equal-stretch rows;
+            ``list`` where ``float`` → fixed height, ``None`` → equal flex-grow share.
+        gap
+            Gap between rows.
+        names
+            Name list indexed top-to-bottom; ``None`` uses generated defaults (``row_0``, …).
+
+        Returns
+        -------
+        MinimalFlexNode
+            Root COLUMN container with one child node per row.
         """
         props = FlexContainerProperties(direction=FlexDirection.COLUMN, row_gap=gap)
         resolved: list[float | None] = [None] * specs if isinstance(specs, int) else specs

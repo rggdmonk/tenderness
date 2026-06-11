@@ -22,11 +22,18 @@ from tests._test_utils.class_test import ClassTestBase, ClassTestConfig
 # --------------------------
 # Eternal contract tests for MinimalFlexBoxTemplateDocuments
 # --------------------------
-MINIMAL_FLEXBOX_TEMPLATE_DOCUMENTS_EXPECTED_METHODS = {"header_sectioned_columns"}
+MINIMAL_FLEXBOX_TEMPLATE_DOCUMENTS_EXPECTED_METHODS = {"header_labeled_sections", "header_sections", "labeled_sections"}
 MINIMAL_FLEXBOX_TEMPLATE_DOCUMENTS_TEST_CLASS_CONFIG = [
     ClassTestConfig(
         cls=MinimalFlexBoxTemplateDocuments,
         expected_methods=MINIMAL_FLEXBOX_TEMPLATE_DOCUMENTS_EXPECTED_METHODS,
+        expected_static_methods={
+            "_resolve_heights",
+            "_resolve_gap_list",
+            "_resolve_section_gap",
+            "_build_leaf",
+            "_build_section",
+        },
     )
 ]
 

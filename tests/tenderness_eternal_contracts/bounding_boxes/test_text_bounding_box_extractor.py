@@ -16,24 +16,44 @@ from __future__ import annotations
 
 import pytest
 
-from tenderness.bounding_boxes.text_bounding_box_extractor import TextBoundingBoxExtractor
+from tenderness.bounding_boxes.text_bounding_box_extractor import TextBoundingBoxExtractor, _RawCluster
 from tests._test_utils.class_test import ClassTestBase, ClassTestConfig
+from tests._test_utils.dataclass_test import DataclassTestBase, DataclassTestConfig
 
 # --------------------------
-# Tests for TextBoundingBoxExtractor
+# Eternal contract tests for _RawCluster
+# --------------------------
+_RAW_CLUSTER_EXPECTED_FIELDS = {"byte_index", "run_end", "ink_rect", "logical_rect"}
+_RAW_CLUSTER_TEST_CLASS_CONFIG = [
+    DataclassTestConfig(
+        dataclass_class=_RawCluster,
+        has_slots=True,
+        expected_fields=_RAW_CLUSTER_EXPECTED_FIELDS,
+    )
+]
+
+
+@pytest.mark.parametrize("config", _RAW_CLUSTER_TEST_CLASS_CONFIG, ids=lambda c: c.dataclass_class.__name__)
+class TestRawClusterContract(DataclassTestBase):
+    pass
+
+
+# --------------------------
+# Eternal contract tests for TextBoundingBoxExtractor
 # --------------------------
 TEXT_BOUNDING_BOX_EXTRACTOR_EXPECTED_METHODS = {
     "extract_bounding_boxes",
-    "_to_tetragon",
-    "_to_baseline",
+    "_pango_rect_to_quadrilateral",
+    "_build_byte_to_char_map",
+    "_build_byte_lengths",
     "_extract_chars",
     "_extract_clusters",
     "_extract_runs",
     "_extract_lines",
     "_extract_layout",
 }
-TEXT_BOUNDING_BOX_EXTRACTOR_EXPECTED_STATIC_METHODS = {"_decode"}
-TEXT_BOUNDING_BOX_EXTRACTOR_EXPECTED_CLASS_VARS = {"PANGO_SCALE"}
+TEXT_BOUNDING_BOX_EXTRACTOR_EXPECTED_STATIC_METHODS: set[str] = set()
+TEXT_BOUNDING_BOX_EXTRACTOR_EXPECTED_CLASS_VARS: set[str] = set()
 
 TEXT_BOUNDING_BOX_EXTRACTOR_TEST_CLASS_CONFIG = [
     ClassTestConfig(

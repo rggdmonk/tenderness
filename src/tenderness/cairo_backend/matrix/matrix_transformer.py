@@ -25,11 +25,6 @@ import cairo
 class CairoMatrixTransformer:
     """Chainable cairo.Matrix transformer for use with cairo.Context.
 
-    Parameters
-    ----------
-    matrix
-        Initial transformation matrix.
-
     Notes
     -----
     https://pycairo.readthedocs.io/en/latest/reference/matrix.html
@@ -38,19 +33,44 @@ class CairoMatrixTransformer:
     """
 
     def __init__(self, matrix: cairo.Matrix) -> None:
+        """Initialize the transformer.
+
+        Parameters
+        ----------
+        matrix
+            Initial transformation matrix.
+        """
         self.matrix = matrix
 
     @classmethod
     def from_new(cls) -> CairoMatrixTransformer:
-        """Construct a transformer with an identity matrix."""
+        """Construct a transformer with an identity matrix.
+
+        Returns
+        -------
+        CairoMatrixTransformer
+            Transformer initialized with an identity matrix.
+        """
         return cls(matrix=cairo.Matrix())
 
     def apply_matrix_to_cairo_context(self, cairo_context: cairo.Context[cairo.Surface]) -> None:
-        """Apply the current matrix to a cairo context."""
+        """Apply the current matrix to a cairo context.
+
+        Parameters
+        ----------
+        cairo_context
+            Cairo context to update.
+        """
         cairo_context.set_matrix(self.matrix)
 
     def _append(self, other: cairo.Matrix) -> None:
-        """Append a matrix, preserving transformation order."""
+        """Append a matrix, preserving transformation order.
+
+        Parameters
+        ----------
+        other
+            Matrix to append.
+        """
         self.matrix = self.matrix.multiply(other)
 
     def get_components(self) -> tuple[float, float, float, float, float, float]:
@@ -58,8 +78,18 @@ class CairoMatrixTransformer:
 
         Returns
         -------
-        tuple
-            Components in ``(xx, yx, xy, yy, x0, y0)`` order.
+        float
+            ``xx`` component.
+        float
+            ``yx`` component.
+        float
+            ``xy`` component.
+        float
+            ``yy`` component.
+        float
+            ``x0`` component.
+        float
+            ``y0`` component.
         """
         m = self.matrix
         return (m.xx, m.yx, m.xy, m.yy, m.x0, m.y0)
@@ -73,6 +103,13 @@ class CairoMatrixTransformer:
             Horizontal distance component.
         dy
             Vertical distance component.
+
+        Returns
+        -------
+        float
+            Transformed horizontal distance component.
+        float
+            Transformed vertical distance component.
         """
         return self.matrix.transform_distance(dx, dy)
 
@@ -85,16 +122,40 @@ class CairoMatrixTransformer:
             Horizontal coordinate.
         y
             Vertical coordinate.
+
+        Returns
+        -------
+        float
+            Transformed horizontal coordinate.
+        float
+            Transformed vertical coordinate.
         """
         return self.matrix.transform_point(x, y)
 
     def invert(self) -> Self:
-        """Invert the matrix in place."""
+        """Invert the matrix in place.
+
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
+        """
         self.matrix.invert()
         return self
 
     def multiply(self, other: cairo.Matrix) -> Self:
-        """Multiply the current matrix by another."""
+        """Multiply the current matrix by another.
+
+        Parameters
+        ----------
+        other
+            Matrix to multiply by.
+
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
+        """
         self.matrix = self.matrix.multiply(other)
         return self
 
@@ -110,6 +171,11 @@ class CairoMatrixTransformer:
             Horizontal translation.
         ty
             Vertical translation.
+
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
 
         Notes
         -----
@@ -129,6 +195,11 @@ class CairoMatrixTransformer:
         sy
             Vertical scale factor.
 
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
+
         Notes
         -----
         Equivalent to ``ctx.scale(sx, sy)``.
@@ -146,6 +217,11 @@ class CairoMatrixTransformer:
             Rotation angle.
         degrees
             Interpret ``angle`` as degrees when ``True``, radians otherwise.
+
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
 
         Notes
         -----
@@ -169,6 +245,11 @@ class CairoMatrixTransformer:
             Vertical coordinate of the rotation center.
         degrees
             Interpret ``angle`` as degrees when ``True``, radians otherwise.
+
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
 
         Notes
         -----
@@ -200,6 +281,11 @@ class CairoMatrixTransformer:
         degrees
             Interpret ``angle`` as degrees when ``True``, radians otherwise.
 
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
+
         Notes
         -----
         Matrix form: ``[1, 0, tan(A), 1, 0, 0]``
@@ -221,6 +307,11 @@ class CairoMatrixTransformer:
         degrees
             Interpret ``angle`` as degrees when ``True``, radians otherwise.
 
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
+
         Notes
         -----
         Matrix form: ``[1, tan(A), 0, 1, 0, 0]``
@@ -240,6 +331,11 @@ class CairoMatrixTransformer:
         cx
             x-coordinate of the flip axis; defaults to the origin.
 
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
+
         Notes
         -----
         Equivalent to scaling by ``(-1, 1)`` around the center point.
@@ -257,6 +353,11 @@ class CairoMatrixTransformer:
         ----------
         cy
             y-coordinate of the flip axis; defaults to the origin.
+
+        Returns
+        -------
+        Self
+            The transformer instance for chaining.
 
         Notes
         -----

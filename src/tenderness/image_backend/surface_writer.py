@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Cairo surface serialization to image, SVG, and PDF files."""
+"""Writes to output files."""
 
 from __future__ import annotations
 
@@ -39,14 +39,22 @@ logger = logging.getLogger(__name__)
 
 @dataclass(slots=True)
 class SurfaceWriterParameters:
-    """Parameters controlling the output path and surface lifecycle."""
+    """Parameters controlling the output path and surface lifecycle.
+
+    Attributes
+    ----------
+    output_file_path
+        Destination path; the file extension is set to match the output format.
+    finish_after
+        If ``True``, the surface (or stream) is finished/closed after saving.
+    """
 
     output_file_path: pathlib.Path
     finish_after: bool = True
 
 
 class SurfaceWriter:
-    """Writes Cairo surfaces to disk in the appropriate format."""
+    """Writes surfaces to disk in the appropriate format."""
 
     def save_as_file(
         self,
@@ -59,13 +67,19 @@ class SurfaceWriter:
 
         Parameters
         ----------
+        surface
+            The Cairo surface to save.
+        surface_config
+            Configuration describing the surface type and output format.
+        surface_writer_params
+            Output path and lifecycle options.
         stream
-            Required for SVG and PDF surfaces; unused for image surfaces.
+            Required for stream-backed surfaces; ``None`` otherwise.
 
         Returns
         -------
         pathlib.Path
-            Actual output path; the suffix is replaced to match the format.
+            Actual output path; the file extension is set to match the output format.
 
         Raises
         ------

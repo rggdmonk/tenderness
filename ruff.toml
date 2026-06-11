@@ -56,8 +56,6 @@ select = [
 ignore = [
   "E501",  # https://docs.astral.sh/ruff/rules/line-too-long/
   "PLR6301",  # https://docs.astral.sh/ruff/rules/no-self-use/
-  "D104",  # TODO: re-enable when all public methods have docstrings
-  "D100"  # TODO: re-enable when all public modules have docstrings
 ]
 
 [lint.pylint]
@@ -78,8 +76,10 @@ max-args = 8  # https://docs.astral.sh/ruff/rules/too-many-arguments/
   "D",  # https://docs.astral.sh/ruff/rules/#pydocstyle-d
 ]
 "src/tenderness/__init__.py" = [
-  "D",  # https://docs.astral.sh/ruff/rules/#pydocstyle-d
   "F403",  # https://docs.astral.sh/ruff/rules/undefined-local-with-import-star/
+]
+"src/*/__init__.py" = [
+  "D104",  # https://docs.astral.sh/ruff/rules/undocumented-public-package/
 ]
 
 [lint.pydocstyle]

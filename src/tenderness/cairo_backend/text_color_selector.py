@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Cairo text color source utilities."""
+"""Text color source utilities."""
 
 from __future__ import annotations
 

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Geometry primitives for cairo/pango rendering."""
+"""Geometry primitives."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ import cairo  # noqa: TC002
 class BoxSpacing:
     """Spacing values for the four sides of a rectangle.
 
-    Parameters
+    Attributes
     ----------
     top
         Top spacing.
@@ -44,11 +44,23 @@ class BoxSpacing:
     left: float = 0.0
 
     def horizontal(self) -> float:
-        """Total horizontal spacing (left + right)."""
+        """Total horizontal spacing (left + right).
+
+        Returns
+        -------
+        float
+            Sum of left and right spacing.
+        """
         return self.left + self.right
 
     def vertical(self) -> float:
-        """Total vertical spacing (top + bottom)."""
+        """Total vertical spacing (top + bottom).
+
+        Returns
+        -------
+        float
+            Sum of top and bottom spacing.
+        """
         return self.top + self.bottom
 
 
@@ -64,13 +76,12 @@ class Padding(BoxSpacing):
 
 @dataclass(slots=True, frozen=True)
 class Rectangle:
-    """An immutable axis-aligned rectangle defined by an origin (x, y) and dimensions, designed for use with cairo/pango (y-down coordinate system).
+    """Immutable axis-aligned rectangle (AABB) with a y-down coordinate system.
 
-    Axis-aligned means all sides are parallel to the X and Y axes — no
-    rotation is stored. This is also known as an **axis-aligned bounding box**
-    (AABB). All spatial operations (``intersects``, ``contains_point``,
-    ``distance_to``, etc.) rely on this property and are not valid for rotated
-    (oriented) bounding boxes (OBB).
+    All sides are parallel to the X and Y axes — no rotation is stored. All
+    spatial operations (``intersects``, ``contains_point``, ``distance_to``,
+    etc.) rely on this property and are not valid for rotated (oriented)
+    bounding boxes (OBB).
 
     To work with rotated layouts, transform the rectangle into device space
     first using ``transform(matrix)``, which returns the AABB of the rotated
@@ -81,24 +92,24 @@ class Rectangle:
     lie at any corner of the geometric region. All spatial operations use the
     safe ``*_min`` / ``*_max`` bounds, never the raw fields directly.
 
-    Use ``is_non_negative`` to test whether all fields are ``>= 0``.
+    Use ``is_non_negative`` to check that all fields are ``>= 0``.
 
     Equality is field-level (same origin + dimensions), so two rectangles that
     describe the same region but differ in stored sign will compare unequal::
 
         Rectangle(0, 0, 10, 10) != Rectangle(10, 10, -10, -10)
 
-    Coordinate system:
-        All named corners (``corners``) assume **cairo's y-down convention**:
-        y increases downward, so ``y_min`` is visually at the top of the
-        rectangle. Do not mix with y-up coordinate systems without flipping
-        ``y_min`` / ``y_max``.
+    Notes
+    -----
+    **Coordinate system**: all named corners (``corners``) assume cairo's
+    y-down convention — y increases downward, so ``y_min`` is visually at the
+    top of the rectangle. Do not mix with y-up coordinate systems without
+    flipping ``y_min`` / ``y_max``.
 
-    Cairo / Pango safety:
-        ``size`` returns the raw stored ``(width, height)``, which may be
-        negative. Passing negative dimensions directly to ``ctx.rectangle()``
-        or Pango APIs produces silent misbehaviour. Use ``normalized_size``
-        when the caller needs guaranteed non-negative values.
+    **Cairo / Pango safety**: ``size`` returns the raw stored
+    ``(width, height)``, which may be negative. Passing negative dimensions
+    directly to ``ctx.rectangle()`` or Pango APIs produces silent misbehaviour.
+    Use ``normalized_size`` when the caller needs guaranteed non-negative values.
 
     Attributes
     ----------
@@ -210,13 +221,7 @@ class Rectangle:
 
     @property
     def aspect_ratio(self) -> float:
-        """``abs(width) / abs(height)``.
-
-        Raises
-        ------
-        ZeroDivisionError
-            When ``height`` is exactly ``0``.
-        """
+        """``abs(width) / abs(height)``; raises ``ZeroDivisionError`` when ``height`` is ``0``."""
         return abs(self.width) / abs(self.height)
 
     @property
@@ -279,6 +284,11 @@ class Rectangle:
             X coordinate of the point.
         py
             Y coordinate of the point.
+
+        Returns
+        -------
+        bool
+            ``True`` if the point lies inside or on the boundary.
         """
         return self._x_min <= px <= self._x_max and self._y_min <= py <= self._y_max
 
@@ -289,6 +299,11 @@ class Rectangle:
         ----------
         other
             The rectangle to test for containment.
+
+        Returns
+        -------
+        bool
+            ``True`` if ``other`` lies entirely within or flush with this rectangle.
         """
         return (
             self._x_min <= other._x_min
@@ -307,6 +322,11 @@ class Rectangle:
         ----------
         other
             The rectangle to test against.
+
+        Returns
+        -------
+        bool
+            ``True`` only when the rectangles share a region of positive area.
 
         See Also
         --------
@@ -329,6 +349,11 @@ class Rectangle:
         other
             The rectangle to test against.
 
+        Returns
+        -------
+        bool
+            ``True`` when rectangles share any boundary contact.
+
         See Also
         --------
         intersects
@@ -350,6 +375,11 @@ class Rectangle:
         ----------
         other
             The rectangle to intersect with.
+
+        Returns
+        -------
+        Rectangle | None
+            The overlapping region, or ``None`` if they don't intersect.
         """
         x1 = max(other._x_min, self._x_min)
         y1 = max(other._y_min, self._y_min)
@@ -366,6 +396,11 @@ class Rectangle:
         ----------
         other
             The rectangle to combine with.
+
+        Returns
+        -------
+        Rectangle
+            The smallest rectangle enclosing both rectangles.
         """
         x1 = min(other._x_min, self._x_min)
         y1 = min(other._y_min, self._y_min)
@@ -374,22 +409,22 @@ class Rectangle:
         return Rectangle(x=x1, y=y1, width=x2 - x1, height=y2 - y1)
 
     def distance_to(self, other: Rectangle) -> float:
-        """
-        Shortest distance between the two rectangles.
-
-        Returns `0.0` if they intersect or touch.
+        """Shortest distance between the two rectangles; ``0.0`` if they intersect or touch.
 
         The signed gap along each axis is computed independently, clamped to
-        `0` (negative gap means overlap on that axis), then combined with
-        `hypot`. This handles all relative positions — left, right, above,
+        ``0`` (negative gap means overlap on that axis), then combined with
+        ``hypot``. This handles all relative positions — left, right, above,
         below, diagonal, overlapping — in a single pass.
 
-        Args:
-            other: The rectangle to measure distance to.
+        Parameters
+        ----------
+        other
+            The rectangle to measure distance to.
 
         Returns
         -------
-            The shortest Euclidean distance, or `0.0` if they touch or overlap.
+        float
+            Shortest Euclidean distance, or ``0.0`` if they touch or overlap.
         """
         dx = max(other._x_min - self._x_max, self._x_min - other._x_max, 0.0)
         dy = max(other._y_min - self._y_max, self._y_min - other._y_max, 0.0)
@@ -408,6 +443,11 @@ class Rectangle:
         matrix
             The cairo affine transformation to apply.
 
+        Returns
+        -------
+        Rectangle
+            Axis-aligned bounding box of the transformed shape.
+
         Notes
         -----
         Capture ``matrix`` from ``ctx.get_matrix()`` **inside** the
@@ -422,18 +462,20 @@ class Rectangle:
         return Rectangle(x=x_min, y=y_min, width=x_max - x_min, height=y_max - y_min)
 
     def inset(self, spacing_box: BoxSpacing) -> Rectangle:
-        """
-        Return the content rectangle after insetting by *spacing_box*.
+        """Return the content rectangle after insetting by ``spacing_box``.
 
         Each side moves inward by its corresponding margin value, matching the
         typographic convention: margins define the space between the page edge
-        and the content area.  Positive values shrink; negative values expand.
+        and the content area. Positive values shrink; negative values expand.
 
-        Args:
-            spacing_box: Margin amounts for each side in device units.
+        Parameters
+        ----------
+        spacing_box
+            Margin amounts for each side in device units.
 
         Returns
         -------
+        Rectangle
             A new ``Rectangle`` with origin ``(x_min + left, y_min + top)``
             and size ``(x_max - x_min - left - right, y_max - y_min - top - bottom)``.
         """

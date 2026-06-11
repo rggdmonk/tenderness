@@ -50,15 +50,7 @@ type TransformParameter = TransformDictParameter | TransformDataclassParameter
 
 
 class CairoContextTransformPipeline:
-    """Fluent pipeline for applying sequential matrix transformations to a cairo.Context.
-
-    Parameters
-    ----------
-    matrix
-        Initial transformation matrix.
-    name
-        Optional label for the pipeline instance.
-    """
+    """Fluent pipeline for applying sequential matrix transformations to a cairo.Context."""
 
     _SUPPORTED_TRANSFORMS: ClassVar[dict[MatrixTransformType, type]] = {
         MatrixTransformType.TRANSLATE: TranslateParameters,
@@ -75,12 +67,32 @@ class CairoContextTransformPipeline:
     _SUPPORTED_TRANSFORMS_PARAMETERS_TYPES: ClassVar[tuple[type, ...]] = tuple(_SUPPORTED_TRANSFORMS.values())
 
     def __init__(self, matrix: cairo.Matrix, name: str = "") -> None:
+        """Initialize the pipeline.
+
+        Parameters
+        ----------
+        matrix
+            Initial transformation matrix.
+        name
+            Optional label for the pipeline instance.
+        """
         self.cairo_matrix_transformer = CairoMatrixTransformer(matrix=matrix)
         self.name = name
 
     @classmethod
     def from_new(cls, name: str = "") -> Self:
-        """Construct a pipeline with an identity matrix."""
+        """Construct a pipeline with an identity matrix.
+
+        Parameters
+        ----------
+        name
+            Optional label for the pipeline instance.
+
+        Returns
+        -------
+        Self
+            Pipeline initialized with an identity matrix.
+        """
         return cls(matrix=cairo.Matrix(), name=name)
 
     @classmethod
@@ -93,11 +105,22 @@ class CairoContextTransformPipeline:
             Context whose current matrix is used as the starting state.
         name
             Optional label for the pipeline instance.
+
+        Returns
+        -------
+        Self
+            Pipeline initialized from the context's current matrix.
         """
         return cls(matrix=cairo_context.get_matrix(), name=name)
 
     def apply_to_cairo_context(self, cairo_context: cairo.Context[cairo.Surface]) -> None:
-        """Apply the accumulated matrix to a cairo context."""
+        """Apply the accumulated matrix to a cairo context.
+
+        Parameters
+        ----------
+        cairo_context
+            Cairo context to update.
+        """
         cairo_context.set_matrix(self.cairo_matrix_transformer.matrix)
 
     @property
@@ -106,7 +129,13 @@ class CairoContextTransformPipeline:
         return self.cairo_matrix_transformer.matrix
 
     def reset(self) -> Self:
-        """Reset the matrix to identity."""
+        """Reset the matrix to identity.
+
+        Returns
+        -------
+        Self
+            The pipeline instance for chaining.
+        """
         self.cairo_matrix_transformer.matrix = cairo.Matrix()
         return self
 
@@ -127,6 +156,11 @@ class CairoContextTransformPipeline:
             Horizontal translation.
         ty
             Vertical translation.
+
+        Returns
+        -------
+        Self
+            The pipeline instance for chaining.
         """
         self.cairo_matrix_transformer.translate(tx=tx, ty=ty)
         return self
@@ -140,6 +174,11 @@ class CairoContextTransformPipeline:
             Horizontal scale factor.
         sy
             Vertical scale factor.
+
+        Returns
+        -------
+        Self
+            The pipeline instance for chaining.
         """
         self.cairo_matrix_transformer.scale(sx=sx, sy=sy)
         return self
@@ -153,6 +192,11 @@ class CairoContextTransformPipeline:
             Rotation angle.
         degrees
             Interpret ``angle`` as degrees when ``True``, radians otherwise.
+
+        Returns
+        -------
+        Self
+            The pipeline instance for chaining.
         """
         self.cairo_matrix_transformer.rotate(angle=angle, degrees=degrees)
         return self
@@ -166,6 +210,11 @@ class CairoContextTransformPipeline:
             Shear angle.
         degrees
             Interpret ``angle`` as degrees when ``True``, radians otherwise.
+
+        Returns
+        -------
+        Self
+            The pipeline instance for chaining.
         """
         self.cairo_matrix_transformer.skew_x(angle=angle, degrees=degrees)
         return self
@@ -179,6 +228,11 @@ class CairoContextTransformPipeline:
             Shear angle.
         degrees
             Interpret ``angle`` as degrees when ``True``, radians otherwise.
+
+        Returns
+        -------
+        Self
+            The pipeline instance for chaining.
         """
         self.cairo_matrix_transformer.skew_y(angle=angle, degrees=degrees)
         return self
@@ -196,6 +250,11 @@ class CairoContextTransformPipeline:
             Vertical coordinate of the rotation center.
         degrees
             Interpret ``angle`` as degrees when ``True``, radians otherwise.
+
+        Returns
+        -------
+        Self
+            The pipeline instance for chaining.
         """
         self.cairo_matrix_transformer.rotate_around_point(angle=angle, cx=cx, cy=cy, degrees=degrees)
         return self
@@ -207,6 +266,11 @@ class CairoContextTransformPipeline:
         ----------
         cx
             x-coordinate of the flip axis; defaults to the origin.
+
+        Returns
+        -------
+        Self
+            The pipeline instance for chaining.
         """
         self.cairo_matrix_transformer.flip_horizontal(cx=cx)
         return self
@@ -218,6 +282,11 @@ class CairoContextTransformPipeline:
         ----------
         cy
             y-coordinate of the flip axis; defaults to the origin.
+
+        Returns
+        -------
+        Self
+            The pipeline instance for chaining.
         """
         self.cairo_matrix_transformer.flip_vertical(cy=cy)
         return self

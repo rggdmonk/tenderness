@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Defines `LayoutInterface` as a wrapper around `Pango.Layout` for easier access to its parameters and geometry calculations."""
+"""Layout interface."""
 
 from __future__ import annotations
 
-import logging
 import pathlib
 from dataclasses import dataclass, field
 from enum import StrEnum, unique
@@ -58,17 +57,68 @@ if TYPE_CHECKING:
     import cairo
 
 
-logger = logging.getLogger(__name__)
-
-
 @unique
-class TextStrategy(StrEnum):  # noqa: D101 TODO: docstring
+class TextStrategy(StrEnum):
+    """Text strategy for ``add_text_to_layout``.
+
+    Attributes
+    ----------
+    TEXT
+        Plain text.
+    MARKUP
+        Pango markup.
+    """
+
     TEXT = "text"
     MARKUP = "markup"
 
 
 @dataclass(slots=True, frozen=True)
-class LayoutInterfaceParameters(BaseInterfaceParameters):  # noqa: D101 TODO: docstring
+class LayoutInterfaceParameters(BaseInterfaceParameters):
+    """Configuration parameters for LayoutInterface.
+
+    Attributes
+    ----------
+    width_device_units
+        Width in device units; exclusive with ``width``.
+    height_device_units
+        Height in device units or line constraint; exclusive with ``height``.
+    indent_device_units
+        Paragraph indent in device units; exclusive with ``indent``.
+    spacing_device_units
+        Inter-line spacing in device units; exclusive with ``spacing``.
+    alignment
+        Paragraph alignment.
+    auto_dir
+        Auto-detect text direction.
+    ellipsize
+        Ellipsis mode.
+    justify
+        Justify lines.
+    justify_last_line
+        Justify last line.
+    line_spacing
+        Line spacing factor.
+    single_paragraph_mode
+        Treat text as single paragraph.
+    wrap
+        Wrap mode.
+    attributes
+        Text attributes; ``None`` clears.
+    tabs
+        Tab stops; ``None`` clears.
+    font_description
+        Font description; ``None`` clears.
+    width
+        Width in Pango units; exclusive with ``width_device_units``.
+    height
+        Height in Pango units; exclusive with ``height_device_units``.
+    indent
+        Indent in Pango units; exclusive with ``indent_device_units``.
+    spacing
+        Inter-line spacing in Pango units; exclusive with ``spacing_device_units``.
+    """
+
     _COERCE_DISPATCH: ClassVar[dict[str, Any]] = {
         "alignment": lambda v: PangoEnumCoerce.coerce(PangoEnumMap.Alignment, v),
         "ellipsize": lambda v: PangoEnumCoerce.coerce(PangoEnumMap.EllipsizeMode, v),
@@ -113,37 +163,92 @@ class LayoutInterfaceParameters(BaseInterfaceParameters):  # noqa: D101 TODO: do
                 msg = f"Cannot set both '{pango_field}' (Pango units) and '{device_field}' (device units) at the same time."
                 raise ValueError(msg)
 
-    def __post_init__(self) -> None:  # noqa: D105 TODO: docstring
+    def __post_init__(self) -> None:
+        """Coerce values and validate parameters after initialization."""
         BaseInterfaceParameters.__post_init__(self)
 
 
 class LayoutInterface(BaseInterface):
+    """Interface for layout.
+
+    Attributes
+    ----------
+    PANGO_SCALE
+        Scale between Pango distances and device units (``Pango.SCALE``, currently 1024).
+
+    Notes
+    -----
+    See https://docs.gtk.org/Pango/class.Layout.html
+
+    1. Create with ``from_cairo_context()``.
+    2. Update with ``update_with_parameters()`` or through properties.
     """
-    Wrapper for Pango.Layout for easier access to its parameters.
-    See: https://docs.gtk.org/Pango/class.Layout.html
-    """  # noqa: D205, D400 TODO: docstring
 
     PANGO_SCALE: int = Pango.SCALE
 
     def __init__(self, pango_layout: Pango.Layout, name: str = "") -> None:
+        """Initialize LayoutInterface.
+
+        Parameters
+        ----------
+        pango_layout
+            Underlying Pango layout object.
+        name
+            Optional label for the interface instance.
+        """
         super().__init__(name=name)
         self.pango_layout = pango_layout
 
     @classmethod
-    def from_cairo_context(cls, cairo_context: cairo.Context[cairo.Surface], name: str = "") -> Self:  # noqa: D102 TODO: docstring
+    def from_cairo_context(cls, cairo_context: cairo.Context[cairo.Surface], name: str = "") -> Self:
+        """Create from a Cairo context.
+
+        Parameters
+        ----------
+        cairo_context
+            Cairo context used to create the Pango layout.
+        name
+            Optional label for the interface instance.
+
+        Returns
+        -------
+        Self
+            ``LayoutInterface`` backed by the given Cairo context.
+        """
         pango_layout = PangoCairo.create_layout(cairo_context)
         return cls(pango_layout=pango_layout, name=name)
 
     # ------------------------------------------------------------------
     # Serialization
     # ------------------------------------------------------------------
-    def serialize_layout(  # noqa: D102 TODO: docstring
+    def serialize_layout(
         self,
         *,
         context: bool = False,
         output: bool = False,
         filepath: pathlib.Path | None = None,
     ) -> str:
+        """Serialize the layout to a UTF-8 string, optionally writing to a file.
+
+        Parameters
+        ----------
+        context
+            Include Pango context in output.
+        output
+            Include output state in output.
+        filepath
+            Write to this path; ``None`` skips file writing.
+
+        Returns
+        -------
+        str
+            Serialized layout as UTF-8.
+
+        Raises
+        ------
+        RuntimeError
+            On write failure, GLib error, or no data returned.
+        """
         flags = Pango.LayoutSerializeFlags.DEFAULT
         if context:
             flags |= Pango.LayoutSerializeFlags.CONTEXT
@@ -172,7 +277,23 @@ class LayoutInterface(BaseInterface):
     # ------------------------------------------------------------------
     # Text
     # ------------------------------------------------------------------
-    def add_text_to_layout(self, text: str, length: int = -1, strategy: TextStrategy | str = TextStrategy.TEXT) -> None:  # noqa: D102 TODO: docstring
+    def add_text_to_layout(self, text: str, length: int = -1, strategy: TextStrategy | str = TextStrategy.TEXT) -> None:
+        """Set layout text, replacing any previous content.
+
+        Parameters
+        ----------
+        text
+            Plain text or Pango markup string.
+        length
+            Byte length of ``text`` to use; ``-1`` for the full string.
+        strategy
+            ``TEXT`` for plain text, ``MARKUP`` for Pango markup.
+
+        Raises
+        ------
+        ValueError
+            If ``strategy`` is not a recognized ``TextStrategy`` value.
+        """
         if strategy == TextStrategy.TEXT:
             self.set_text(text=text, length=length)
         elif strategy == TextStrategy.MARKUP:
@@ -182,124 +303,371 @@ class LayoutInterface(BaseInterface):
             raise ValueError(msg)
 
     @property
-    def text(self) -> str:  # noqa: D102 TODO: docstring
+    def text(self) -> str:
+        """Current plain text of the layout.
+
+        Returns
+        -------
+        str
+            Plain text content without any markup.
+        """
         return self.pango_layout.get_text()
 
-    def set_text(self, text: str, length: int = -1) -> None:  # noqa: D102 TODO: docstring
+    def set_text(self, text: str, length: int = -1) -> None:
+        """Set the layout's plain text.
+
+        Parameters
+        ----------
+        text
+            Plain text to set.
+        length
+            Byte length of ``text`` to use; ``-1`` for the full string.
+
+        Notes
+        -----
+        Invalid UTF-8 bytes are rendered as placeholder glyphs. Does not clear
+        attributes set by a previous markup call; call ``attributes = None`` to reset.
+        """
         self.pango_layout.set_text(text, length)
 
-    def set_markup(self, markup: str, length: int = -1) -> None:  # noqa: D102 TODO: docstring
+    def set_markup(self, markup: str, length: int = -1) -> None:
+        """Set the layout's text as Pango markup.
+
+        Parameters
+        ----------
+        markup
+            Pango markup string to set.
+        length
+            Byte length of ``markup`` to use; ``-1`` for the full string.
+        """
         self.pango_layout.set_markup(markup, length)  # type: ignore
 
-    def set_markup_with_accel(self) -> None:  # noqa: D102 TODO: docstring
+    def set_markup_with_accel(self) -> None:
+        """Set Pango markup with accelerator key processing.
+
+        Raises
+        ------
+        NotImplementedError
+            Always; not yet implemented.
+        """
         raise NotImplementedError
 
     # ------------------------------------------------------------------
     # Properties with getters and setters
     # ------------------------------------------------------------------
     @property
-    def alignment(self) -> Pango.Alignment:  # noqa: D102 TODO: docstring
+    def alignment(self) -> Pango.Alignment:
+        """Horizontal alignment of lines.
+
+        Returns
+        -------
+        Pango.Alignment
+            Current horizontal alignment setting.
+        """
         return self.pango_layout.get_alignment()
 
     @alignment.setter
     def alignment(self, alignment: Pango.Alignment) -> None:
+        """Set the horizontal alignment of lines.
+
+        Parameters
+        ----------
+        alignment
+            Alignment to apply.
+        """
         self.pango_layout.set_alignment(alignment)
 
     @property
-    def auto_dir(self) -> bool:  # noqa: D102 TODO: docstring
+    def auto_dir(self) -> bool:
+        """Text direction auto-detected from content.
+
+        Returns
+        -------
+        bool
+            ``True`` if text direction is auto-detected from content.
+        """
         return self.pango_layout.get_auto_dir()
 
     @auto_dir.setter
     def auto_dir(self, auto_dir: bool) -> None:
+        """Enable or disable auto-detection of text direction from content.
+
+        Parameters
+        ----------
+        auto_dir
+            If ``True``, auto-detect text direction from content.
+
+        Notes
+        -----
+        When disabled, direction follows the context's base direction.
+        ``ALIGN_LEFT`` and ``ALIGN_RIGHT`` swap meaning when the auto-detected
+        direction differs from the context.
+        """
         self.pango_layout.set_auto_dir(auto_dir)
 
     @property
-    def ellipsize(self) -> Pango.EllipsizeMode:  # noqa: D102 TODO: docstring
+    def ellipsize(self) -> Pango.EllipsizeMode:
+        """Ellipsization mode for text that exceeds layout dimensions.
+
+        Returns
+        -------
+        Pango.EllipsizeMode
+            Current ellipsization mode.
+
+        Notes
+        -----
+        Use ``is_ellipsized`` to query whether any paragraphs were actually ellipsized.
+        """
         return self.pango_layout.get_ellipsize()
 
     @ellipsize.setter
     def ellipsize(self, ellipsize: Pango.EllipsizeMode) -> None:
+        """Set the ellipsization mode.
+
+        Parameters
+        ----------
+        ellipsize
+            Ellipsization mode to apply.
+        """
         self.pango_layout.set_ellipsize(ellipsize)
 
     @property
-    def justify(self) -> bool:  # noqa: D102 TODO: docstring
+    def justify(self) -> bool:
+        """``True`` when lines are stretched to fill the entire layout width.
+
+        Returns
+        -------
+        bool
+            ``True`` if lines are stretched to fill the layout width.
+        """
         return self.pango_layout.get_justify()
 
     @justify.setter
     def justify(self, justify: bool) -> None:
+        """Enable or disable line stretching to fill the layout width.
+
+        Parameters
+        ----------
+        justify
+            If ``True``, stretch lines to fill the layout width.
+
+        Notes
+        -----
+        Tabs and justification conflict: justification moves content away from
+        tab-aligned positions.
+        """
         self.pango_layout.set_justify(justify)
 
     @property
-    def justify_last_line(self) -> bool:  # noqa: D102 TODO: docstring
+    def justify_last_line(self) -> bool:
+        """``True`` when the last line is stretched to fill the layout width.
+
+        Returns
+        -------
+        bool
+            ``True`` if the last line is stretched to fill the layout width.
+        """
         return self.pango_layout.get_justify_last_line()
 
     @justify_last_line.setter
     def justify_last_line(self, justify_last_line: bool) -> None:
+        """Enable or disable stretching of the last line to fill the layout width.
+
+        Parameters
+        ----------
+        justify_last_line
+            If ``True``, stretch the last line to fill the layout width.
+
+        Notes
+        -----
+        Only has effect when ``justify`` is enabled.
+        """
         self.pango_layout.set_justify_last_line(justify_last_line)
 
     @property
-    def line_spacing(self) -> float:  # noqa: D102 TODO: docstring
+    def line_spacing(self) -> float:
+        """Inter-line spacing factor.
+
+        Returns
+        -------
+        float
+            Current inter-line spacing factor.
+        """
         return self.pango_layout.get_line_spacing()
 
     @line_spacing.setter
     def line_spacing(self, factor: float) -> None:
+        """Set the inter-line spacing factor.
+
+        Parameters
+        ----------
+        factor
+            Spacing factor to apply.
+        """
         self.pango_layout.set_line_spacing(factor)
 
     @property
-    def single_paragraph_mode(self) -> bool:  # noqa: D102 TODO: docstring
+    def single_paragraph_mode(self) -> bool:
+        """``True`` when single-paragraph mode is active.
+
+        Returns
+        -------
+        bool
+            ``True`` if text is treated as a single paragraph.
+        """
         return self.pango_layout.get_single_paragraph_mode()
 
     @single_paragraph_mode.setter
     def single_paragraph_mode(self, setting: bool) -> None:
+        """Enable or disable single-paragraph mode.
+
+        Parameters
+        ----------
+        setting
+            If ``True``, treat all text as a single paragraph.
+
+        Notes
+        -----
+        When enabled, paragraph separators are rendered as glyphs rather than
+        causing line breaks.
+        """
         self.pango_layout.set_single_paragraph_mode(setting)
 
     @property
-    def wrap(self) -> Pango.WrapMode:  # noqa: D102 TODO: docstring
+    def wrap(self) -> Pango.WrapMode:
+        """Line wrapping mode.
+
+        Returns
+        -------
+        Pango.WrapMode
+            Current line wrapping mode.
+
+        Notes
+        -----
+        Use ``is_wrapped`` to query whether any paragraphs were actually wrapped.
+        """
         return self.pango_layout.get_wrap()
 
     @wrap.setter
     def wrap(self, wrap: Pango.WrapMode) -> None:
+        """Set the line wrapping mode.
+
+        Parameters
+        ----------
+        wrap
+            Wrapping mode to apply.
+
+        Notes
+        -----
+        Only has effect when a width is set; set ``width`` to ``-1`` to disable wrapping.
+        """
         self.pango_layout.set_wrap(wrap)
 
     # ------------------------------------------------------------------
     # Properties with only getters
     # ------------------------------------------------------------------
     @property
-    def baseline(self) -> int:  # noqa: D102 TODO: docstring
+    def baseline(self) -> int:
+        """First-line baseline Y offset from layout top, in Pango units.
+
+        Returns
+        -------
+        int
+            Y offset of the first-line baseline from the layout top, in Pango units.
+        """
         return self.pango_layout.get_baseline()
 
     @property
-    def character_count(self) -> int:  # noqa: D102 TODO: docstring
+    def character_count(self) -> int:
+        """Number of characters in the layout.
+
+        Returns
+        -------
+        int
+            Number of Unicode characters in the layout text.
+        """
         return self.pango_layout.get_character_count()
 
     @property
-    def line_count(self) -> int:  # noqa: D102 TODO: docstring
+    def line_count(self) -> int:
+        """Number of lines in the layout.
+
+        Returns
+        -------
+        int
+            Number of lines in the layout.
+        """
         return self.pango_layout.get_line_count()
 
     @property
     def pixel_size(self) -> tuple[int, int]:
-        """Content size in device units (logical)."""
+        """Content size in device units (logical).
+
+        Returns
+        -------
+        tuple[int, int]
+            ``(width, height)`` in device units.
+        """
         return self.pango_layout.get_pixel_size()
 
     @property
-    def serial(self) -> int:  # noqa: D102 TODO: docstring
+    def serial(self) -> int:
+        """Serial number; incremented on each layout or context change.
+
+        Returns
+        -------
+        int
+            Current serial number.
+
+        Notes
+        -----
+        Initialized to a small positive value; never ``0``. May wrap —
+        always compare with ``!=``, never ``<``.
+        """
         return self.pango_layout.get_serial()
 
     @property
     def size(self) -> tuple[int, int]:
-        """Content size in Pango units (logical)."""
+        """Content size in Pango units (logical).
+
+        Returns
+        -------
+        tuple[int, int]
+            ``(width, height)`` in Pango units.
+        """
         return self.pango_layout.get_size()
 
     @property
-    def unknown_glyphs_count(self) -> int:  # noqa: D102 TODO: docstring
+    def unknown_glyphs_count(self) -> int:
+        """Number of unknown glyphs in the layout.
+
+        Returns
+        -------
+        int
+            Number of unknown glyphs in the layout.
+        """
         return self.pango_layout.get_unknown_glyphs_count()
 
     @property
-    def is_ellipsized(self) -> bool:  # noqa: D102 TODO: docstring
+    def is_ellipsized(self) -> bool:
+        """``True`` when any paragraphs were ellipsized.
+
+        Returns
+        -------
+        bool
+            ``True`` if the layout has been ellipsized.
+        """
         return self.pango_layout.is_ellipsized()
 
     @property
-    def is_wrapped(self) -> bool:  # noqa: D102 TODO: docstring
+    def is_wrapped(self) -> bool:
+        """``True`` when any paragraphs were wrapped.
+
+        Returns
+        -------
+        bool
+            ``True`` if the layout has been wrapped.
+        """
         return self.pango_layout.is_wrapped()
 
     # ------------------------------------------------------------------
@@ -307,89 +675,335 @@ class LayoutInterface(BaseInterface):
     # ------------------------------------------------------------------
     @property
     def font_description(self) -> Pango.FontDescription | None:
-        """Read-only pointer — call `.copy()` before modifying."""
+        """Font description applied to the layout.
+
+        Returns
+        -------
+        Pango.FontDescription | None
+            Current font description, or ``None`` if inherited from the context.
+        """
         return self.pango_layout.get_font_description()
 
     @font_description.setter
     def font_description(self, desc: Pango.FontDescription | None) -> None:
+        """Set the font description.
+
+        Parameters
+        ----------
+        desc
+            Font description to apply, or ``None`` to clear.
+        """
         self.pango_layout.set_font_description(desc)
 
     @property
-    def attributes(self) -> Pango.AttrList | None:  # noqa: D102 TODO: docstring
+    def attributes(self) -> Pango.AttrList | None:
+        """Attribute list applied to the layout.
+
+        Returns
+        -------
+        Pango.AttrList | None
+            Current attribute list, or ``None`` if not set.
+        """
         return self.pango_layout.get_attributes()
 
     @attributes.setter
     def attributes(self, attrs: Pango.AttrList | None) -> None:
+        """Set the text attributes.
+
+        Parameters
+        ----------
+        attrs
+            Attribute list to apply, or ``None`` to clear.
+        """
         self.pango_layout.set_attributes(attrs)
 
     @property
-    def tabs(self) -> Pango.TabArray | None:  # noqa: D102 TODO: docstring
+    def tabs(self) -> Pango.TabArray | None:
+        """Tab stops used by the layout.
+
+        Returns
+        -------
+        Pango.TabArray | None
+            Current tab stops, or ``None`` if not set.
+        """
         return self.pango_layout.get_tabs()
 
     @tabs.setter
     def tabs(self, tabs: Pango.TabArray | None) -> None:
+        """Set the tab stops.
+
+        Parameters
+        ----------
+        tabs
+            Tab array to apply, or ``None`` to clear.
+        """
         self.pango_layout.set_tabs(tabs)
 
     # ------------------------------------------------------------------
     # Methods
     # ------------------------------------------------------------------
-    def context_changed(self) -> None:  # noqa: D102 TODO: docstring
+    def context_changed(self) -> None:
+        """Force recomputation of layout state that depends on the context.
+
+        Notes
+        -----
+        Call after modifying the layout's associated context.
+        """
         self.pango_layout.context_changed()
 
-    def copy(self) -> Pango.Layout:  # noqa: D102 TODO: docstring
+    def copy(self) -> Pango.Layout:
+        """Return a deep copy of the layout.
+
+        Returns
+        -------
+        Pango.Layout
+            Independent deep copy of the underlying layout.
+
+        Notes
+        -----
+        The attribute list, tab array, and text are all copied by value.
+        """
         return self.pango_layout.copy()
 
-    def get_caret_pos(self, index_: int) -> tuple[Pango.Rectangle, Pango.Rectangle]:  # noqa: D102 TODO: docstring
+    def get_caret_pos(self, index_: int) -> tuple[Pango.Rectangle, Pango.Rectangle]:
+        """Return strong and weak caret rectangles for the given byte index.
+
+        Parameters
+        ----------
+        index_
+            Byte index within the layout text.
+
+        Returns
+        -------
+        tuple[Pango.Rectangle, Pango.Rectangle]
+            ``(strong, weak)`` caret rectangles in Pango units.
+        """
         return self.pango_layout.get_caret_pos(index_)
 
-    def get_context(self) -> Pango.Context:  # noqa: D102 TODO: docstring
+    def get_context(self) -> Pango.Context:
+        """Return the context associated with the layout.
+
+        Returns
+        -------
+        Pango.Context
+            Pango context used by this layout.
+        """
         return self.pango_layout.get_context()
 
-    def get_cursor_pos(self, index_: int) -> tuple[Pango.Rectangle, Pango.Rectangle]:  # noqa: D102 TODO: docstring
+    def get_cursor_pos(self, index_: int) -> tuple[Pango.Rectangle, Pango.Rectangle]:
+        """Return strong and weak cursor rectangles for the given byte index.
+
+        Parameters
+        ----------
+        index_
+            Byte index within the layout text.
+
+        Returns
+        -------
+        tuple[Pango.Rectangle, Pango.Rectangle]
+            ``(strong, weak)`` cursor rectangles in Pango units.
+        """
         return self.pango_layout.get_cursor_pos(index_)
 
-    def get_direction(self, index: int) -> Pango.Direction:  # noqa: D102 TODO: docstring
+    def get_direction(self, index: int) -> Pango.Direction:
+        """Return the text direction at the given byte index.
+
+        Parameters
+        ----------
+        index
+            Byte index within the layout text.
+
+        Returns
+        -------
+        Pango.Direction
+            Text direction at ``index``.
+        """
         return self.pango_layout.get_direction(index)
 
-    def get_iter(self) -> Pango.LayoutIter:  # noqa: D102 TODO: docstring
+    def get_iter(self) -> Pango.LayoutIter:
+        """Return an iterator for the visual lines of the layout.
+
+        Returns
+        -------
+        Pango.LayoutIter
+            Iterator positioned at the start of the layout.
+        """
         return self.pango_layout.get_iter()
 
-    def get_line(self, line: int) -> Pango.LayoutLine | None:  # noqa: D102 TODO: docstring
+    def get_line(self, line: int) -> Pango.LayoutLine | None:
+        """Return the line at the given index, or ``None`` if out of range.
+
+        Parameters
+        ----------
+        line
+            Zero-based line index.
+
+        Returns
+        -------
+        Pango.LayoutLine | None
+            Requested line, or ``None`` if out of range.
+        """
         return self.pango_layout.get_line(line)
 
-    def get_line_readonly(self, line: int) -> Pango.LayoutLine | None:  # noqa: D102 TODO: docstring
+    def get_line_readonly(self, line: int) -> Pango.LayoutLine | None:
+        """Return the line at the given index (read-only), or ``None`` if out of range.
+
+        Parameters
+        ----------
+        line
+            Zero-based line index.
+
+        Returns
+        -------
+        Pango.LayoutLine | None
+            Read-only line, or ``None`` if out of range.
+        """
         return self.pango_layout.get_line_readonly(line)
 
-    def get_lines(self) -> list[Pango.LayoutLine]:  # noqa: D102 TODO: docstring
+    def get_lines(self) -> list[Pango.LayoutLine]:
+        """Return all layout lines.
+
+        Returns
+        -------
+        list[Pango.LayoutLine]
+            All lines in visual order.
+        """
         return self.pango_layout.get_lines()
 
-    def get_lines_readonly(self) -> list[Pango.LayoutLine]:  # noqa: D102 TODO: docstring
+    def get_lines_readonly(self) -> list[Pango.LayoutLine]:
+        """Return all layout lines (read-only).
+
+        Returns
+        -------
+        list[Pango.LayoutLine]
+            All lines in visual order (read-only).
+        """
         return self.pango_layout.get_lines_readonly()
 
-    def get_log_attrs(self) -> list[Pango.LogAttr]:  # noqa: D102 TODO: docstring
+    def get_log_attrs(self) -> list[Pango.LogAttr]:
+        """Return logical attributes for each character in the layout text.
+
+        Returns
+        -------
+        list[Pango.LogAttr]
+            Logical attributes per character, including a trailing sentinel.
+        """
         return self.pango_layout.get_log_attrs()
 
-    def get_log_attrs_readonly(self) -> list[Pango.LogAttr]:  # noqa: D102 TODO: docstring
+    def get_log_attrs_readonly(self) -> list[Pango.LogAttr]:
+        """Return logical attributes for each character in the layout text (read-only).
+
+        Returns
+        -------
+        list[Pango.LogAttr]
+            Logical attributes per character, including a trailing sentinel (read-only).
+        """
         return self.pango_layout.get_log_attrs_readonly()
 
-    def index_to_line_x(self, *, index_: int, trailing: bool) -> tuple[int, int]:  # noqa: D102 TODO: docstring
+    def index_to_line_x(self, *, index_: int, trailing: bool) -> tuple[int, int]:
+        """Convert a byte index to line number and X coordinate.
+
+        Parameters
+        ----------
+        index_
+            Byte index within the layout text.
+        trailing
+            If ``True``, return the position after the character at ``index_``.
+
+        Returns
+        -------
+        tuple[int, int]
+            ``(line, x_pos)`` where ``line`` is the zero-based line index and
+            ``x_pos`` is the X coordinate in Pango units.
+        """
         return self.pango_layout.index_to_line_x(index_, trailing)
 
-    def index_to_pos(self, index_: int) -> Pango.Rectangle:  # noqa: D102 TODO: docstring
+    def index_to_pos(self, index_: int) -> Pango.Rectangle:
+        """Return the rectangle enclosing the character at the given byte index.
+
+        Parameters
+        ----------
+        index_
+            Byte index within the layout text.
+
+        Returns
+        -------
+        Pango.Rectangle
+            Bounding rectangle of the character in Pango units.
+        """
         return self.pango_layout.index_to_pos(index_)
 
-    def move_cursor_visually(  # noqa: D102 TODO: docstring
+    def move_cursor_visually(
         self, *, strong: bool, old_index: int, old_trailing: int, direction: int
     ) -> tuple[int, int]:
+        """Move the cursor one visual position in the given direction.
+
+        Parameters
+        ----------
+        strong
+            If ``True``, move the strong cursor; otherwise the weak cursor.
+        old_index
+            Current byte index within the layout text.
+        old_trailing
+            Current trailing value (0 or 1).
+        direction
+            Direction to move: positive for right, negative for left.
+
+        Returns
+        -------
+        tuple[int, int]
+            ``(new_index, new_trailing)`` after the move.
+        """
         return self.pango_layout.move_cursor_visually(strong, old_index, old_trailing, direction)
 
-    def serialize(self, flags: Pango.LayoutSerializeFlags) -> GLib.Bytes:  # noqa: D102 TODO: docstring
+    def serialize(self, flags: Pango.LayoutSerializeFlags) -> GLib.Bytes:
+        """Serialize the layout to bytes using the given flags.
+
+        Parameters
+        ----------
+        flags
+            Flags controlling which parts of the layout are serialized.
+
+        Returns
+        -------
+        GLib.Bytes
+            Serialized layout data.
+        """
         return self.pango_layout.serialize(flags)
 
-    def write_to_file(self, flags: Pango.LayoutSerializeFlags, filename: str) -> bool:  # noqa: D102 TODO: docstring
+    def write_to_file(self, flags: Pango.LayoutSerializeFlags, filename: str) -> bool:
+        """Serialize the layout and write it to a file.
+
+        Parameters
+        ----------
+        flags
+            Flags controlling which parts of the layout are serialized.
+        filename
+            Destination file path.
+
+        Returns
+        -------
+        bool
+            ``True`` on success, ``False`` on failure.
+        """
         return self.pango_layout.write_to_file(flags, filename)
 
-    def xy_to_index(self, x: int, y: int) -> tuple[bool, int, int]:  # noqa: D102 TODO: docstring
+    def xy_to_index(self, x: int, y: int) -> tuple[bool, int, int]:
+        """Convert layout coordinates to a byte index and trailing value.
+
+        Parameters
+        ----------
+        x
+            X coordinate in Pango units.
+        y
+            Y coordinate in Pango units.
+
+        Returns
+        -------
+        tuple[bool, int, int]
+            ``(inside, index, trailing)`` — ``inside`` is ``True`` if the point
+            is within the layout, ``index`` is the byte index, ``trailing`` is 0 or 1.
+        """
         return self.pango_layout.xy_to_index(x, y)
 
     # ------------------------------------------------------------------
@@ -397,11 +1011,24 @@ class LayoutInterface(BaseInterface):
     # ------------------------------------------------------------------
     @property
     def extents(self) -> tuple[Pango.Rectangle, Pango.Rectangle]:
-        """(ink, logical) extents in Pango units."""
+        """(ink, logical) extents in Pango units.
+
+        Returns
+        -------
+        tuple[Pango.Rectangle, Pango.Rectangle]
+            ``(ink, logical)`` extents in Pango units.
+        """
         return self.pango_layout.get_extents()
 
     @property
-    def extents_layout_rect(self) -> tuple[LayoutRect, LayoutRect]:  # noqa: D102 TODO: docstring
+    def extents_layout_rect(self) -> tuple[LayoutRect, LayoutRect]:
+        """(ink, logical) extents in Pango units as ``LayoutRect``.
+
+        Returns
+        -------
+        tuple[LayoutRect, LayoutRect]
+            ``(ink, logical)`` extents in Pango units as ``LayoutRect``.
+        """
         ink, logical = self.extents
         return (
             LayoutRect.from_pango_rectangle(rect=ink),
@@ -409,12 +1036,26 @@ class LayoutInterface(BaseInterface):
         )
 
     @property
-    def extents_ink_layout_rect(self) -> LayoutRect:  # noqa: D102 TODO: docstring
+    def extents_ink_layout_rect(self) -> LayoutRect:
+        """Ink extents in Pango units as ``LayoutRect``.
+
+        Returns
+        -------
+        LayoutRect
+            Ink extents in Pango units.
+        """
         ink, _ = self.extents
         return LayoutRect.from_pango_rectangle(rect=ink)
 
     @property
-    def extents_logical_layout_rect(self) -> LayoutRect:  # noqa: D102 TODO: docstring
+    def extents_logical_layout_rect(self) -> LayoutRect:
+        """Logical extents in Pango units as ``LayoutRect``.
+
+        Returns
+        -------
+        LayoutRect
+            Logical extents in Pango units.
+        """
         _, logical = self.extents
         return LayoutRect.from_pango_rectangle(rect=logical)
 
@@ -423,37 +1064,48 @@ class LayoutInterface(BaseInterface):
     # ------------------------------------------------------------------
     @property
     def width(self) -> int:
-        """
-        Width in Pango units. Default `-1`.
+        """Layout width in Pango units.
 
         Returns
         -------
-            width: Width value.
+        int
+            Width value with semantics:
+
+            - ``-1`` (default): no width set; no wrapping or ellipsization.
+            - ``> 0``: maximum width in Pango units; wrapping and ellipsization apply.
+            - ``= 0``: follows ``Pango.WrapMode`` and ``Pango.EllipsizeMode`` rules — avoid.
+
+        Notes
+        -----
+        Any negative value is normalized to ``-1`` by Pango.
         """
         return self.pango_layout.get_width()
 
     @width.setter
     def width(self, width: int) -> None:
-        """
-        Set width in Pango units.
-
-        Note: any negative value will be converted to `-1` by Pango.
-
-        Width semantics:
-        - `-1` (default): unconstrained width (single line).
-        - `> 0`: width in Pango units.
-        - `= 0`: width follows `Pango.WrapMode` and `Pango.EllipsizeMode` rules (better not use this).
+        """Set the layout width in Pango units.
 
         Parameters
         ----------
         width
-             Width value in Pango units. Negative values will be treated as `-1` (unconstrained).
-
+            Width in Pango units.
         """
         self.pango_layout.set_width(width)
 
     @property
-    def width_device_units(self) -> WidthConstraint:  # noqa: D102 TODO: docstring
+    def width_device_units(self) -> WidthConstraint:
+        """Layout width as a ``WidthConstraint`` in device units.
+
+        Returns
+        -------
+        WidthConstraint
+            ``WidthUnconstrained`` if width is ``-1``, otherwise ``WidthDeviceUnits``.
+
+        Raises
+        ------
+        ValueError
+            If width is ``0`` (special Pango mode) or a positive value is not provided in device unit mode.
+        """
         width = self.width
 
         if width < 0:  # any negative value is converted to -1 by Pango
@@ -466,8 +1118,21 @@ class LayoutInterface(BaseInterface):
         return WidthDeviceUnits(width=Pango.units_to_double(width))
 
     @width_device_units.setter
-    def width_device_units(self, width: float | WidthConstraint) -> None:  # TODO: docstring
+    def width_device_units(self, width: float | WidthConstraint) -> None:
+        """Set the layout width in device units.
 
+        Parameters
+        ----------
+        width
+            Width as a ``WidthConstraint`` or a positive float.
+
+        Raises
+        ------
+        TypeError
+            If ``width`` is not a ``WidthConstraint``, ``float``, or ``int``.
+        ValueError
+            If ``width`` is not positive in device unit mode.
+        """
         if isinstance(width, WidthUnconstrained) or width == -1:
             self.width = -1
             return
@@ -491,46 +1156,44 @@ class LayoutInterface(BaseInterface):
     # ------------------------------------------------------------------
     @property
     def height(self) -> int:
-        """
-        Height in Pango units. Default `-1`.
+        """Layout height in Pango units.
+
+        Only has effect when ``width > 0`` and ``ellipsize != PANGO_ELLIPSIZE_NONE``.
 
         Returns
         -------
-            height: Height value.
+        int
+            Height value with semantics:
+
+            - ``-1`` (default): 1 line per paragraph (first line of each paragraph is shown).
+            - ``> 0``: maximum height in Pango units; at least one line per paragraph is always shown.
+            - ``= 0``: exactly one line for the entire layout.
+            - ``< 0``: maximum lines per paragraph (absolute value).
         """
         return self.pango_layout.get_height()
 
     @height.setter
     def height(self, height: int) -> None:
-        """
-        Set height in Pango units. Only works if `width` is `> 0`.
-
-        Height semantics:
-
-        - `> 0`: height in Pango units.
-            Note:
-                If `Pango.EllipsizeMode.None` the content will flow freely but won't be visible beyond the specified height.
-                If `Pango.EllipsizeMode.START/END/MIDDLE` the content will be truncated to fit within the specified height,
-                and an ellipsis will be shown at the truncation point.
-
-        - `= 0`: exactly one line of text, regardless of how much space it takes.
-
-        - `< 0`: maximum number of lines PER paragraph.
-            Note:
-                If `Pango.EllipsizeMode.None` the content will flow freely but won't be visible beyond the specified number of lines.
-                If `Pango.EllipsizeMode.START/END/MIDDLE` the content will be truncated to fit within the specified number of lines,
-                and an ellipsis will be shown at the truncation point.
+        """Set the layout height in Pango units.
 
         Parameters
         ----------
         height
-            Height value in Pango units. Note that any negative value will be treated as a line limit, and zero is a special mode for exactly one line.
-
+            Height in Pango units.
         """
         self.pango_layout.set_height(height)
 
     @property
-    def height_device_units(self) -> HeightConstraint:  # noqa: D102 TODO: docstring
+    def height_device_units(self) -> HeightConstraint:
+        """Layout height as a ``HeightConstraint`` in device units.
+
+        Returns
+        -------
+        HeightConstraint
+            ``HeightDeviceUnits`` if height ``> 0``, ``HeightSingleLine`` if ``= 0``,
+            or ``HeightLineLimit`` if ``< 0``.
+
+        """
         height = self.height
         if height > 0:
             return HeightDeviceUnits(height=Pango.units_to_double(height))
@@ -544,6 +1207,20 @@ class LayoutInterface(BaseInterface):
         self,
         height: float | HeightConstraint,
     ) -> None:
+        """Set the layout height in device units.
+
+        Parameters
+        ----------
+        height
+            Height as a ``HeightConstraint`` or a float/int.
+
+        Raises
+        ------
+        ValueError
+            If ``HeightDeviceUnits.height`` or ``HeightLineLimit.lines`` is not positive.
+        TypeError
+            If ``height`` is not a ``HeightConstraint``, ``float``, or ``int``.
+        """
         if isinstance(height, HeightDeviceUnits):
             if height.height <= 0:
                 msg = "HeightDeviceUnits.height must be positive."
@@ -574,19 +1251,52 @@ class LayoutInterface(BaseInterface):
     # ------------------------------------------------------------------
     @property
     def indent(self) -> int:
-        """Paragraph indent in Pango units."""
+        """Paragraph indent in Pango units. Default ``0``.
+
+        Returns
+        -------
+        int
+            - ``>= 0``: indent applied to the first line of each paragraph.
+            - ``< 0``: hanging indent; first line is full-width, subsequent lines
+              are indented by the absolute value.
+
+        Notes
+        -----
+        Ignored when alignment is ``Pango.Alignment.CENTER``.
+        """
         return self.pango_layout.get_indent()
 
     @indent.setter
     def indent(self, indent: int) -> None:
+        """Set the paragraph indent in Pango units.
+
+        Parameters
+        ----------
+        indent
+            Indent in Pango units.
+        """
         self.pango_layout.set_indent(indent)
 
     @property
-    def indent_device_units(self) -> float:  # noqa: D102 TODO: docstring
+    def indent_device_units(self) -> float:
+        """Paragraph indent in device units.
+
+        Returns
+        -------
+        float
+            Paragraph indent in device units.
+        """
         return Pango.units_to_double(self.indent)
 
     @indent_device_units.setter
     def indent_device_units(self, indent: float) -> None:
+        """Set the paragraph indent in device units.
+
+        Parameters
+        ----------
+        indent
+            Indent in device units.
+        """
         self.indent = Pango.units_from_double(indent)
 
     # ------------------------------------------------------------------
@@ -594,11 +1304,24 @@ class LayoutInterface(BaseInterface):
     # ------------------------------------------------------------------
     @property
     def pixel_extents(self) -> tuple[Pango.Rectangle, Pango.Rectangle]:
-        """(ink, logical) extents in device units."""
+        """(ink, logical) extents in device units.
+
+        Returns
+        -------
+        tuple[Pango.Rectangle, Pango.Rectangle]
+            ``(ink, logical)`` extents in device units.
+        """
         return self.pango_layout.get_pixel_extents()
 
     @property
-    def pixel_extents_layout_rect(self) -> tuple[LayoutRect, LayoutRect]:  # noqa: D102 TODO: docstring
+    def pixel_extents_layout_rect(self) -> tuple[LayoutRect, LayoutRect]:
+        """(ink, logical) extents in device units as ``LayoutRect``.
+
+        Returns
+        -------
+        tuple[LayoutRect, LayoutRect]
+            ``(ink, logical)`` extents in device units as ``LayoutRect``.
+        """
         ink, logical = self.pixel_extents
         return (
             LayoutRect.from_pango_rectangle(rect=ink),
@@ -606,12 +1329,26 @@ class LayoutInterface(BaseInterface):
         )
 
     @property
-    def pixel_extents_ink_layout_rect(self) -> LayoutRect:  # noqa: D102 TODO: docstring
+    def pixel_extents_ink_layout_rect(self) -> LayoutRect:
+        """Ink extents in device units as ``LayoutRect``.
+
+        Returns
+        -------
+        LayoutRect
+            Ink extents in device units.
+        """
         ink, _ = self.pixel_extents
         return LayoutRect.from_pango_rectangle(rect=ink)
 
     @property
-    def pixel_extents_logical_layout_rect(self) -> LayoutRect:  # noqa: D102 TODO: docstring
+    def pixel_extents_logical_layout_rect(self) -> LayoutRect:
+        """Logical extents in device units as ``LayoutRect``.
+
+        Returns
+        -------
+        LayoutRect
+            Logical extents in device units.
+        """
         _, logical = self.pixel_extents
         return LayoutRect.from_pango_rectangle(rect=logical)
 
@@ -620,35 +1357,77 @@ class LayoutInterface(BaseInterface):
     # ------------------------------------------------------------------
     @property
     def spacing(self) -> int:
-        """Inter-line spacing in Pango units."""
+        """Inter-line spacing in Pango units.
+
+        Returns
+        -------
+        int
+            Inter-line spacing in Pango units.
+        """
         return self.pango_layout.get_spacing()
 
     @spacing.setter
     def spacing(self, spacing: int) -> None:
+        """Set the inter-line spacing in Pango units.
+
+        Parameters
+        ----------
+        spacing
+            Spacing in Pango units.
+
+        Notes
+        -----
+        Ignored when ``line_spacing`` is non-zero.
+        """
         self.pango_layout.set_spacing(spacing)
 
     @property
-    def spacing_device_units(self) -> float:  # noqa: D102 TODO: docstring
+    def spacing_device_units(self) -> float:
+        """Inter-line spacing in device units.
+
+        Returns
+        -------
+        float
+            Inter-line spacing in device units.
+        """
         return Pango.units_to_double(self.spacing)
 
     @spacing_device_units.setter
     def spacing_device_units(self, spacing: float) -> None:
+        """Set the inter-line spacing in device units.
+
+        Parameters
+        ----------
+        spacing
+            Spacing in device units.
+        """
         self.spacing = Pango.units_from_double(spacing)
 
     # ------------------------------------------------------------------
     # Layout fit report (logical fits, ink fits, clipped text)
     # ------------------------------------------------------------------
-    def get_layout_fit_report(self, height_override: HeightConstraint | None = None) -> LayoutFitReport:  # noqa: C901 # TODO: refactor to reduce complexity
-        """
-        Compute logical fits, ink fits, and clipped text in a single pass.
+    def get_layout_fit_report(self, height_override: HeightConstraint | None = None) -> LayoutFitReport:  # noqa: C901  TODO: refactor to reduce complexity
+        """Compute logical fits, ink fits, and clipped text in a single pass.
 
         Walks the layout line iterator once to determine the last visible line
         under the active height constraint, then derives all three results from
         that single traversal.
 
+        Parameters
+        ----------
+        height_override
+            Use this constraint instead of the layout's current height setting.
+            ``None`` uses the layout's current ``height_device_units``.
+
         Returns
         -------
-            `LayoutFitReport` with logical fits, ink fits, and clipped text.
+        LayoutFitReport
+            Contains ``fits_logical``, ``fits_ink``, and ``clipped_text``.
+
+        Raises
+        ------
+        TypeError
+            If the width constraint type is not a ``WidthConstraint``.
         """
         full_text = self.text
         encoded = full_text.encode("utf-8")

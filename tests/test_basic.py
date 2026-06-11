@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import sys
 
+import pytest
+
 from scripts.download_test_fonts import _MANIFEST_NAME
 from tenderness.font_files.manifest import FontManifestManager
 from tests._test_utils.fonts_test import _TEST_FONT_SOURCES
@@ -24,6 +26,7 @@ from tests._test_utils.paths_test import TEST_FONTS_DIR, TESTS_CACHE_DIR
 _DOWNLOAD_HINT = "Run 'python -m scripts.download_test_fonts' to download test fonts."
 
 
+@pytest.mark.order(0)
 class TestDownloadTestFonts:
     def test_fonts_dir_exists(self) -> None:
         assert TEST_FONTS_DIR.is_dir(), f"Test fonts directory not found. {_DOWNLOAD_HINT}"
@@ -39,6 +42,7 @@ class TestDownloadTestFonts:
             assert (TEST_FONTS_DIR / source.file_name).is_file(), f"Missing font: {source.file_name}. {_DOWNLOAD_HINT}"
 
 
+@pytest.mark.order(1)
 def test_little_endian() -> None:
 
     # TODO: to array method can have different behavior on big-endian systems(now no check in code).

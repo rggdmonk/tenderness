@@ -14,8 +14,13 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import gi
 import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 from tenderness.pango_backend.pango_enum_coerce import (
     PangoEnumCoerce,
@@ -241,7 +246,7 @@ class TestPangoEnumCoerce:
             PangoEnumCoerce.coerce(PangoEnumMap.WrapMode, "bad")
 
 
-_LITERAL_MAP_CASES: list[tuple[list[str], dict[str, object], str]] = [
+_LITERAL_MAP_CASES: list[tuple[list[str], Mapping[str, object], str]] = [
     (["word", "char", "word-char", "none"], PangoEnumMap.WrapMode, "WrapMode"),
     (["none", "start", "middle", "end"], PangoEnumMap.EllipsizeMode, "EllipsizeMode"),
     (["left", "center", "right"], PangoEnumMap.Alignment, "Alignment"),
@@ -296,7 +301,7 @@ class TestPangoEnumLiterals:
     @pytest.mark.parametrize(
         ("values", "mapping", "map_name"), _LITERAL_MAP_CASES, ids=lambda x: x if isinstance(x, str) else ""
     )
-    def test_literals_in_map(self, values: list[str], mapping: dict[str, object], map_name: str) -> None:
+    def test_literals_in_map(self, values: list[str], mapping: Mapping[str, object], map_name: str) -> None:
         for value in values:
             assert value in mapping, f"{value!r} missing from {map_name} map"
         assert len(mapping) == len(values), f"{map_name} map has unexpected extra keys"

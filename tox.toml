@@ -1,0 +1,26 @@
+min_version = "4"
+requires = ["tox-uv>=1.35.0"]
+env_list = ["3.12", "3.13", "3.14", "lint", "typing"]
+
+[env_run_base]
+runner = "uv-venv-lock-runner"
+dependency_groups = ["test"]
+description = "run the test suite with pytest"
+commands = [["pytest", "--output-path=tenderness_tests_output/{env_name}", { replace = "posargs", default = ["tests"], extend = true }]]
+
+[env.lint]
+runner = "uv-venv-lock-runner"
+dependency_groups = ["lint"]
+description = "run linters"
+default_base_python = ["3.13"]
+commands = [
+    ["ruff", "check", { replace = "posargs", default = ["."], extend = true }],
+    ["pydoclint", "src"],
+]
+
+[env.typing]
+runner = "uv-venv-lock-runner"
+dependency_groups = ["typing", "test"]
+description = "run type checker"
+default_base_python = ["3.13"]
+commands = [["mypy"]]

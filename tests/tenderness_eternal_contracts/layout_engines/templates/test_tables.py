@@ -22,7 +22,7 @@ from tests._test_utils.class_test import ClassTestBase, ClassTestConfig
 # --------------------------
 # Eternal contract tests for MinimalFlexBoxTemplateTables
 # --------------------------
-MINIMAL_FLEXBOX_TEMPLATE_TABLES_EXPECTED_METHODS = {"table_custom", "table_header_body"}
+MINIMAL_FLEXBOX_TEMPLATE_TABLES_EXPECTED_METHODS = {"table_basic", "table_header_basic"}
 MINIMAL_FLEXBOX_TEMPLATE_TABLES_TEST_CLASS_CONFIG = [
     ClassTestConfig(
         cls=MinimalFlexBoxTemplateTables,

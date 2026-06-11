@@ -21,7 +21,7 @@ from functools import cached_property
 
 import pytest
 
-from tests._test_utils.helpers import (
+from tests._test_utils.eternal_contracts_helpers import (
     _is_classmethod_defined_on,
     _is_method_defined_on,
     _is_property_defined_on,
