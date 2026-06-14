@@ -54,6 +54,59 @@ CHAR_BBOX_EXTRACTION_TEST_CASES: list[CharBBoxExtractionTestCase] = [
         expected_byte_lengths=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     ),
     CharBBoxExtractionTestCase(
+        test_name="cr_alone",
+        input_text="a\rb",
+        include_text=True,
+        expected_chars=["a", "\r", "b"],
+        expected_byte_indexes=[0, 1, 2],
+        expected_byte_lengths=[1, 1, 1],
+    ),
+    # \n\r: two independent paragraph breaks, each visited once with distinct byte_index
+    CharBBoxExtractionTestCase(
+        test_name="lfcr",
+        input_text="a\n\rb",
+        include_text=True,
+        expected_chars=["a", "\n", "\r", "b"],
+        expected_byte_indexes=[0, 1, 2, 3],
+        expected_byte_lengths=[1, 1, 1, 1],
+    ),
+    # \r\n: Pango treats as a single paragraph separator unit; both bytes anchored to byte_index=\r
+    CharBBoxExtractionTestCase(
+        test_name="crlf_multiline",
+        input_text="1.\r\n2.",
+        include_text=True,
+        expected_chars=["1", ".", "\r", "\n", "2", "."],
+        expected_byte_indexes=[0, 1, 2, 3, 4, 5],
+        expected_byte_lengths=[1, 1, 1, 1, 1, 1],
+    ),
+    # U+2029 PARAGRAPH SEPARATOR (3 bytes UTF-8): NULL run, single visit, zero-width
+    CharBBoxExtractionTestCase(
+        test_name="paragraph_separator",
+        input_text="a\u2029b",
+        include_text=True,
+        expected_chars=["a", "\u2029", "b"],
+        expected_byte_indexes=[0, 1, 4],
+        expected_byte_lengths=[1, 3, 1],
+    ),
+    # U+2028 LINE SEPARATOR (3 bytes UTF-8): non-null run, zero-width glyph
+    CharBBoxExtractionTestCase(
+        test_name="line_separator",
+        input_text="a\u2028b",
+        include_text=True,
+        expected_chars=["a", "\u2028", "b"],
+        expected_byte_indexes=[0, 1, 4],
+        expected_byte_lengths=[1, 3, 1],
+    ),
+    # Tab is included in a non-null run at CHAR level, byte_length=1
+    CharBBoxExtractionTestCase(
+        test_name="tab_in_text",
+        input_text="a\tb",
+        include_text=True,
+        expected_chars=["a", "\t", "b"],
+        expected_byte_indexes=[0, 1, 2],
+        expected_byte_lengths=[1, 1, 1],
+    ),
+    CharBBoxExtractionTestCase(
         test_name="2byte_greek",
         input_text="αβγ",
         include_text=True,
@@ -95,6 +148,63 @@ CHAR_BBOX_EXTRACTION_TEST_CASES: list[CharBBoxExtractionTestCase] = [
         expected_chars=["🐻", "‍", "❄", "️", " ", "c", "a", "f", "é"],
         expected_byte_indexes=[0, 4, 7, 10, 13, 14, 15, 16, 17],
         expected_byte_lengths=[4, 3, 3, 3, 1, 1, 1, 1, 2],
+    ),
+    # RTL with line breaks: Hebrew chars are 2 bytes each (UTF-8).
+    # Pango visits in visual order (reversed), so ב(2) comes before א(0).
+    # אב\nגד: א=0, ב=2, \n=4, ג=5, ד=7
+    CharBBoxExtractionTestCase(
+        test_name="rtl_lf",
+        input_text="אב\nגד",
+        include_text=True,
+        expected_chars=["ב", "א", "\n", "ד", "ג"],
+        expected_byte_indexes=[2, 0, 4, 7, 5],
+        expected_byte_lengths=[2, 2, 1, 2, 2],
+    ),
+    # אב\rגד: \r is a paragraph break like \n — single visit, no stall
+    CharBBoxExtractionTestCase(
+        test_name="rtl_cr",
+        input_text="אב\rגד",
+        include_text=True,
+        expected_chars=["ב", "א", "\r", "ד", "ג"],
+        expected_byte_indexes=[2, 0, 4, 7, 5],
+        expected_byte_lengths=[2, 2, 1, 2, 2],
+    ),
+    # אב\r\nגד: \r=4, \n=5; Pango stalls at byte 4 for both — fix reconstructs \n at byte 5
+    CharBBoxExtractionTestCase(
+        test_name="rtl_crlf",
+        input_text="אב\r\nגד",
+        include_text=True,
+        expected_chars=["ב", "א", "\r", "\n", "ד", "ג"],
+        expected_byte_indexes=[2, 0, 4, 5, 8, 6],
+        expected_byte_lengths=[2, 2, 1, 1, 2, 2],
+    ),
+    # אב\n\rגד: \n and \r are two independent breaks, each visited once
+    CharBBoxExtractionTestCase(
+        test_name="rtl_lfcr",
+        input_text="אב\n\rגד",
+        include_text=True,
+        expected_chars=["ב", "א", "\n", "\r", "ד", "ג"],
+        expected_byte_indexes=[2, 0, 4, 5, 8, 6],
+        expected_byte_lengths=[2, 2, 1, 1, 2, 2],
+    ),
+    # "אב\u2029גד": U+2029 (3 bytes) visited after the RTL pair in visual order
+    CharBBoxExtractionTestCase(
+        test_name="rtl_ps",
+        input_text="אב\u2029גד",
+        include_text=True,
+        expected_chars=["ב", "א", "\u2029", "ד", "ג"],
+        expected_byte_indexes=[2, 0, 4, 9, 7],
+        expected_byte_lengths=[2, 2, 3, 2, 2],
+    ),
+    # "אב\u2028גד": U+2028 (3 bytes) in a non-null run; in RTL it appears at the visual
+    # left edge of line 0, so it is iterated first before the Hebrew chars
+    CharBBoxExtractionTestCase(
+        test_name="rtl_ls",
+        input_text="אב\u2028גד",
+        include_text=True,
+        expected_chars=["\u2028", "ב", "א", "ד", "ג"],
+        expected_byte_indexes=[4, 2, 0, 9, 7],
+        expected_byte_lengths=[3, 2, 2, 2, 2],
     ),
     # Arabic is RTL (same visual iteration pattern as Hebrew):
     # "marhaba" logical order: m(0) r(2) h(4) b(6) a(8), visual left-to-right: a b h r m

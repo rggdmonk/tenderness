@@ -66,6 +66,34 @@ LAYOUT_BBOX_EXTRACTION_TEST_CASES: list[LayoutBBoxExtractionTestCase] = [
         include_text=True,
         expected_text="🎸🎵",
     ),
+    # '\r\n' is preserved verbatim — layout text is the full unmodified source string
+    LayoutBBoxExtractionTestCase(
+        test_name="crlf_multiline",
+        input_text="red\r\nblue",
+        include_text=True,
+        expected_text="red\r\nblue",
+    ),
+    # '\r' is preserved verbatim — layout text is the full unmodified source string
+    LayoutBBoxExtractionTestCase(
+        test_name="cr_multiline",
+        input_text="ef\rgh",
+        include_text=True,
+        expected_text="ef\rgh",
+    ),
+    # U+2029 (PARAGRAPH SEPARATOR) is preserved verbatim
+    LayoutBBoxExtractionTestCase(
+        test_name="ps_multiline",
+        input_text="ef\u2029gh",
+        include_text=True,
+        expected_text="ef\u2029gh",
+    ),
+    # U+2028 (LINE SEPARATOR) is preserved verbatim
+    LayoutBBoxExtractionTestCase(
+        test_name="ls_multiline",
+        input_text="ef\u2028gh",
+        include_text=True,
+        expected_text="ef\u2028gh",
+    ),
     # Hebrew RTL — layout text is preserved in logical order regardless of direction
     LayoutBBoxExtractionTestCase(
         test_name="rtl_hebrew",

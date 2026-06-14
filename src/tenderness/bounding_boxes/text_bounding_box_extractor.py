@@ -221,23 +221,31 @@ class TextBoundingBoxExtractor:
     ) -> list[CharBBox]:
         it = pango_layout.get_iter()
         char_bboxes: list[CharBBox] = []
+        prev_byte_index = -1
         while True:
             char = it.get_char_extents()
             byte_index = it.get_index()
             if text_data is not None:
-                char_text: str | None = text_data.text[int(text_data.byte_to_char[byte_index])]
-                byte_length: int | None = int(text_data.byte_lengths[byte_index])
+                # Pango visits \r\n as two chars but reports \r's byte_index for both.
+                if byte_index == prev_byte_index:
+                    actual_byte_index = byte_index + int(text_data.byte_lengths[byte_index])
+                else:
+                    actual_byte_index = byte_index
+                char_text: str | None = text_data.text[int(text_data.byte_to_char[actual_byte_index])]
+                byte_length: int | None = int(text_data.byte_lengths[actual_byte_index])
             else:
+                actual_byte_index = byte_index
                 char_text = None
                 byte_length = None
             char_bboxes.append(
                 CharBBox(
                     text=char_text,
-                    byte_index=byte_index,
+                    byte_index=actual_byte_index,
                     byte_length=byte_length,
                     logical_bbox=self._pango_rect_to_quadrilateral(matrix=matrix, rect=char),
                 )
             )
+            prev_byte_index = byte_index
             if not it.next_char():
                 break
         return char_bboxes

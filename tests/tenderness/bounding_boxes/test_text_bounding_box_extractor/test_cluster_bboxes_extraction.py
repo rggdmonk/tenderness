@@ -154,6 +154,90 @@ CLUSTER_BBOX_EXTRACTION_TEST_CASES: list[ClusterBBoxExtractionTestCase] = [
             ExpectedClusterBBox(text="d", byte_index=4, byte_length=1),
         ],
     ),
+    # '\r' is a NULL sentinel run — excluded. Gap is +1 byte.
+    # "ef\rgh": e=0, f=1, \r=2(skipped), g=3, h=4
+    ClusterBBoxExtractionTestCase(
+        test_name="cr_two_lines",
+        input_text="ef\rgh",
+        include_text=True,
+        expected_clusters=[
+            ExpectedClusterBBox(text="e", byte_index=0, byte_length=1),
+            ExpectedClusterBBox(text="f", byte_index=1, byte_length=1),
+            ExpectedClusterBBox(text="g", byte_index=3, byte_length=1),
+            ExpectedClusterBBox(text="h", byte_index=4, byte_length=1),
+        ],
+    ),
+    # U+2029 (PARAGRAPH SEPARATOR, 3 UTF-8 bytes) lands in a NULL sentinel run — excluded. Gap is +3.
+    # "ef\u2029gh": e=0, f=1, PS=2-4(skipped), g=5, h=6
+    ClusterBBoxExtractionTestCase(
+        test_name="ps_two_paragraphs",
+        input_text="ef\u2029gh",
+        include_text=True,
+        expected_clusters=[
+            ExpectedClusterBBox(text="e", byte_index=0, byte_length=1),
+            ExpectedClusterBBox(text="f", byte_index=1, byte_length=1),
+            ExpectedClusterBBox(text="g", byte_index=5, byte_length=1),
+            ExpectedClusterBBox(text="h", byte_index=6, byte_length=1),
+        ],
+    ),
+    # U+2028 (LINE SEPARATOR, 3 UTF-8 bytes) lands in a non-NULL run — included as a zero-width cluster.
+    # "ef\u2028gh": e=0, f=1, LS=2(byte_length=3), g=5, h=6
+    ClusterBBoxExtractionTestCase(
+        test_name="ls_included",
+        input_text="ef\u2028gh",
+        include_text=True,
+        expected_clusters=[
+            ExpectedClusterBBox(text="e", byte_index=0, byte_length=1),
+            ExpectedClusterBBox(text="f", byte_index=1, byte_length=1),
+            ExpectedClusterBBox(text="\u2028", byte_index=2, byte_length=3),
+            ExpectedClusterBBox(text="g", byte_index=5, byte_length=1),
+            ExpectedClusterBBox(text="h", byte_index=6, byte_length=1),
+        ],
+    ),
+    # "פע גד": Hebrew RTL + \n\r (two breaks). Both land in NULL runs — excluded.
+    # Visual order line 0: ע(2) פ(0); line 1: ג(8) ד(6)
+    ClusterBBoxExtractionTestCase(
+        test_name="rtl_lfcr",
+        input_text="פע\n\rדג",
+        include_text=True,
+        check_ink_overlap=False,
+        expected_clusters=[
+            ExpectedClusterBBox(text="ע", byte_index=2, byte_length=2),
+            ExpectedClusterBBox(text="פ", byte_index=0, byte_length=2),
+            ExpectedClusterBBox(text="ג", byte_index=8, byte_length=2),
+            ExpectedClusterBBox(text="ד", byte_index=6, byte_length=2),
+        ],
+    ),
+    # ""\u05d8\u05d6\u2029\u05db\u05dc": Hebrew RTL + U+2029 (PS, 3 bytes). PS is NULL run — excluded, gap +3.
+    # Visual order line 0: ז(2) ט(0); line 1: ל(9) כ(7)  # noqa: RUF003
+    ClusterBBoxExtractionTestCase(
+        test_name="rtl_ps",
+        input_text="טז\u2029כל",
+        include_text=True,
+        check_ink_overlap=False,
+        expected_clusters=[
+            ExpectedClusterBBox(text="ז", byte_index=2, byte_length=2),
+            ExpectedClusterBBox(text="ט", byte_index=0, byte_length=2),  # noqa: RUF001
+            ExpectedClusterBBox(text="ל", byte_index=9, byte_length=2),
+            ExpectedClusterBBox(text="כ", byte_index=7, byte_length=2),
+        ],
+    ),
+    # ""\u05de\u05e0\u2028\u05e1\u05e2": Hebrew RTL + U+2028 (LS, 3 bytes). LS is non-NULL run — included, zero-width.
+    # In RTL, LS sits at the visual left edge of line 0, so it iterates first.
+    # Visual order: LS(4) נ(2) מ(0) | ע(9) ס(7)  # noqa: RUF003
+    ClusterBBoxExtractionTestCase(
+        test_name="rtl_ls",
+        input_text="מנ\u2028סע",  # noqa: RUF001
+        include_text=True,
+        check_ink_overlap=False,
+        expected_clusters=[
+            ExpectedClusterBBox(text="\u2028", byte_index=4, byte_length=3),
+            ExpectedClusterBBox(text="נ", byte_index=2, byte_length=2),
+            ExpectedClusterBBox(text="מ", byte_index=0, byte_length=2),
+            ExpectedClusterBBox(text="ע", byte_index=9, byte_length=2),
+            ExpectedClusterBBox(text="ס", byte_index=7, byte_length=2),  # noqa: RUF001
+        ],
+    ),
     # '\t' is a regular printable whitespace — rendered in a normal run, included as a cluster.
     ClusterBBoxExtractionTestCase(
         test_name="tab_in_text",
@@ -236,8 +320,8 @@ class TestTextBoundingBoxExtractorClusterBBoxExtraction:
             # RTL clusters come out in visual order, so sort by byte_index to restore logical order.
             sorted_clusters = sorted(result.cluster_bboxes, key=lambda cb: cb.byte_index)
             assert "".join(cb.text for cb in sorted_clusters if cb.text is not None) == test_case.input_text.replace(
-                "\n", ""
-            )
+                "\r\n", ""
+            ).replace("\r", "").replace("\n", "").replace("\u2029", "")
 
         for cluster_bbox, expected in zip(result.cluster_bboxes, test_case.expected_clusters, strict=True):
             assert cluster_bbox.text == expected.text

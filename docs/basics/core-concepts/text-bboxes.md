@@ -118,7 +118,11 @@ Example: `"Some XZY?!\nАБВ for sure"` produces one layout extent spanning bot
     }
 ```
 
-- Line breaks (`\n`, `\r\n`, etc.) behave differently per level. At `CHAR` and `LAYOUT` level they are included. At `CLUSTER` and `RUN` level they are excluded — inserts a NULL sentinel run at each line end with no glyph data. At `LINE` level they are excluded from `text` and `byte_length`, but `byte_index` of the next line advances past them.
+- Line breaks behave differently per level:
+    - **`CHAR`** — included. Each line break is included with a zero-width, full-height logical bounding box at the end of its line. `\r\n` produces two separate entries (one for `\r`, one for `\n`) each with a correct `byte_index` and `byte_length`.
+    - **`CLUSTER` / `RUN`** — line breaks are excluded — the `byte_index` of the next cluster or run jumps past them (`+1` for `\n`/`\r`, `+2` for `\r\n`, `+3` for `U+2029`). `U+2028` (LINE SEPARATOR) is an exception: it is included as a whitespace character with a zero-width logical extent.
+    - **`LINE`** — line breaks are excluded from each line's `text` and `byte_length`; the next line's `byte_index` jumps past them (`+1`, `+1`, `+2`, `+3` respectively). `U+2028` is an exception: it is included as whitespace in the preceding line's `text` and `byte_length`.
+    - **`LAYOUT`** — included. `text` is the full original string unchanged.
 
 
 ### Reconstruction
@@ -126,10 +130,12 @@ Example: `"Some XZY?!\nАБВ for sure"` produces one layout extent spanning bot
 | Level | Reconstructable | Sort needed | Line breaks |
 |---|---|:---:|:---:|
 | `CHAR` | Full text | sort by `byte_index` | included |
-| `CLUSTER` | Full text excluding line breaks | sort by `byte_index` | excluded |
-| `RUN` | Full text excluding line breaks | sort by `byte_index` | excluded |
-| `LINE` | Full text excluding line breaks | no | excluded |
+| `CLUSTER` | Full text excluding line breaks | sort by `byte_index` | excluded[^1] |
+| `RUN` | Full text excluding line breaks | sort by `byte_index` | excluded[^1] |
+| `LINE` | Full text excluding line breaks | no | excluded[^1] |
 | `LAYOUT` | Full text | no | included |
+
+[^1]: `U+2028 (LINE SEPARATOR)` is treated as whitespace and is included, not excluded.
 
 Sorting by `byte_index` is required at `CHAR`, `CLUSTER`, and `RUN` levels because RTL text is returned in visual order, making `byte_index` values non-monotonic. `LINE` and `LAYOUT` are always in logical order.
 

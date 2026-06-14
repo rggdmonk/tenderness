@@ -65,6 +65,17 @@ RUN_BBOX_EXTRACTION_TEST_CASES: list[RunBBoxExtractionTestCase] = [
             ExpectedRunBBox(text="bat", byte_index=4, byte_length=3),
         ],
     ),
+    # '\r\n' excluded (both bytes are NULL sentinel run); gap is 2 bytes.
+    # "jet\r\nsky": jet=0-2, \r=3(skipped), \n=4(skipped), sky starts at byte 5
+    RunBBoxExtractionTestCase(
+        test_name="crlf_two_paragraphs",
+        input_text="jet\r\nsky",
+        include_text=True,
+        expected_runs=[
+            ExpectedRunBBox(text="jet", byte_index=0, byte_length=3),
+            ExpectedRunBBox(text="sky", byte_index=5, byte_length=3),
+        ],
+    ),
     # Arabic RTL single line — one RTL run covering the full text.
     # "شمس" (sun): ش(2) + م(2) + س(2) = 6 bytes
     RunBBoxExtractionTestCase(
@@ -95,6 +106,75 @@ RUN_BBOX_EXTRACTION_TEST_CASES: list[RunBBoxExtractionTestCase] = [
         expected_runs=[
             ExpectedRunBBox(text="Hello ", byte_index=0, byte_length=6),
             ExpectedRunBBox(text="你好", byte_index=6, byte_length=6),
+        ],
+    ),
+    # '\r' is a NULL sentinel run — excluded. Gap is +1 byte.
+    # "ef\rgh": "ef"=0(len 2), \r=2(skipped), "gh"=3(len 2)
+    RunBBoxExtractionTestCase(
+        test_name="cr_two_paragraphs",
+        input_text="ef\rgh",
+        include_text=True,
+        expected_runs=[
+            ExpectedRunBBox(text="ef", byte_index=0, byte_length=2),
+            ExpectedRunBBox(text="gh", byte_index=3, byte_length=2),
+        ],
+    ),
+    # U+2029 (PARAGRAPH SEPARATOR, 3 UTF-8 bytes) is a NULL sentinel run — excluded. Gap is +3.
+    # "ef\u2029gh": "ef"=0(len 2), PS=2-4(skipped), "gh"=5(len 2)
+    RunBBoxExtractionTestCase(
+        test_name="ps_two_paragraphs",
+        input_text="ef\u2029gh",
+        include_text=True,
+        expected_runs=[
+            ExpectedRunBBox(text="ef", byte_index=0, byte_length=2),
+            ExpectedRunBBox(text="gh", byte_index=5, byte_length=2),
+        ],
+    ),
+    # U+2028 (LINE SEPARATOR, 3 UTF-8 bytes) is a non-NULL run — included as its own run.
+    # "ef\u2028gh": "ef"=0(len 2), LS=2(len 3), "gh"=5(len 2)
+    RunBBoxExtractionTestCase(
+        test_name="ls_creates_run",
+        input_text="ef\u2028gh",
+        include_text=True,
+        expected_runs=[
+            ExpectedRunBBox(text="ef", byte_index=0, byte_length=2),
+            ExpectedRunBBox(text="\u2028", byte_index=2, byte_length=3),
+            ExpectedRunBBox(text="gh", byte_index=5, byte_length=2),
+        ],
+    ),
+    # Arabic RTL + \n\r: both breaks are NULL sentinel runs — excluded. Gap +2 bytes.
+    # "بت جح": "بت"=0(len 4), \n=4+\r=5(skipped), "جح"=6(len 4)
+    RunBBoxExtractionTestCase(
+        test_name="rtl_lfcr",
+        input_text="بت\n\rجح",
+        include_text=True,
+        expected_runs=[
+            ExpectedRunBBox(text="بت", byte_index=0, byte_length=4),
+            ExpectedRunBBox(text="جح", byte_index=6, byte_length=4),
+        ],
+    ),
+    # Arabic RTL + U+2029 (PS, 3 bytes): NULL run — excluded. Gap +3.
+    # "قل جح": "قل"=0(len 4), PS=4-6(skipped), "جح"=7(len 4)
+    RunBBoxExtractionTestCase(
+        test_name="rtl_ps",
+        input_text="قل\u2029جح",
+        include_text=True,
+        expected_runs=[
+            ExpectedRunBBox(text="قل", byte_index=0, byte_length=4),
+            ExpectedRunBBox(text="جح", byte_index=7, byte_length=4),
+        ],
+    ),
+    # Arabic RTL + U+2028 (LS, 3 bytes): non-NULL run — included as its own run.
+    # In RTL, LS sits at the visual left of line 0, so it iterates first.
+    # "بج حخ": LS=4(len 3), "بج"=0(len 4), "حخ"=7(len 4)
+    RunBBoxExtractionTestCase(
+        test_name="rtl_ls",
+        input_text="بج\u2028حخ",
+        include_text=True,
+        expected_runs=[
+            ExpectedRunBBox(text="\u2028", byte_index=4, byte_length=3),
+            ExpectedRunBBox(text="بج", byte_index=0, byte_length=4),
+            ExpectedRunBBox(text="حخ", byte_index=7, byte_length=4),
         ],
     ),
     RunBBoxExtractionTestCase(
@@ -151,8 +231,8 @@ class TestTextBoundingBoxExtractorRunBBoxExtraction:
             # Sort by byte_index to restore logical order before joining.
             sorted_runs = sorted(result.run_bboxes, key=lambda rb: rb.byte_index)
             assert "".join(rb.text for rb in sorted_runs if rb.text is not None) == test_case.input_text.replace(
-                "\n", ""
-            )
+                "\r\n", ""
+            ).replace("\r", "").replace("\n", "").replace("\u2029", "")
 
         for run_bbox, expected in zip(result.run_bboxes, test_case.expected_runs, strict=True):
             assert run_bbox.text == expected.text

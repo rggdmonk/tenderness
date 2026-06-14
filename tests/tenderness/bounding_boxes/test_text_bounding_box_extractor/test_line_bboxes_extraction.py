@@ -152,6 +152,174 @@ LINE_BBOX_EXTRACTION_TEST_CASES: list[LineBBoxExtractionTestCase] = [
             ),
         ],
     ),
+    # '\r\n' gap is 2 bytes; each line's byte_length excludes the terminator.
+    # "pen\r\nink": pen=0-2(len 3), \r=3+\n=4(gap), ink=5-7(len 3)
+    LineBBoxExtractionTestCase(
+        test_name="crlf_two_lines",
+        input_text="pen\r\nink",
+        include_text=True,
+        expected_lines=[
+            ExpectedLineBBox(
+                text="pen",
+                byte_index=0,
+                byte_length=3,
+                resolved_direction=Pango.Direction.LTR,
+                is_paragraph_start=True,
+            ),
+            ExpectedLineBBox(
+                text="ink",
+                byte_index=5,
+                byte_length=3,
+                resolved_direction=Pango.Direction.LTR,
+                is_paragraph_start=True,
+            ),
+        ],
+    ),
+    # '\r' gap is +1 byte; line text excludes the terminator.
+    # "pq\rst": pq=0(len 2), \r=2(gap), st=3(len 2)
+    LineBBoxExtractionTestCase(
+        test_name="cr_two_lines",
+        input_text="pq\rst",
+        include_text=True,
+        expected_lines=[
+            ExpectedLineBBox(
+                text="pq",
+                byte_index=0,
+                byte_length=2,
+                resolved_direction=Pango.Direction.LTR,
+                is_paragraph_start=True,
+            ),
+            ExpectedLineBBox(
+                text="st",
+                byte_index=3,
+                byte_length=2,
+                resolved_direction=Pango.Direction.LTR,
+                is_paragraph_start=True,
+            ),
+        ],
+    ),
+    # U+2029 (PARAGRAPH SEPARATOR, 3 UTF-8 bytes) gap is +3; excluded from line text.
+    # "pq\u2029st": pq=0(len 2), PS=2-4(gap), st=5(len 2)
+    LineBBoxExtractionTestCase(
+        test_name="ps_two_lines",
+        input_text="pq\u2029st",
+        include_text=True,
+        expected_lines=[
+            ExpectedLineBBox(
+                text="pq",
+                byte_index=0,
+                byte_length=2,
+                resolved_direction=Pango.Direction.LTR,
+                is_paragraph_start=True,
+            ),
+            ExpectedLineBBox(
+                text="st",
+                byte_index=5,
+                byte_length=2,
+                resolved_direction=Pango.Direction.LTR,
+                is_paragraph_start=True,
+            ),
+        ],
+    ),
+    # U+2028 (LINE SEPARATOR, 3 UTF-8 bytes) is included in the preceding line's text and byte_length.
+    # "pq\u2028st": line0=pq+LS=0(len 5), line1=st=5(len 2)
+    LineBBoxExtractionTestCase(
+        test_name="ls_two_lines",
+        input_text="pq\u2028st",
+        include_text=True,
+        expected_lines=[
+            ExpectedLineBBox(
+                text="pq\u2028",
+                byte_index=0,
+                byte_length=5,
+                resolved_direction=Pango.Direction.LTR,
+                is_paragraph_start=True,
+            ),
+            ExpectedLineBBox(
+                text="st",
+                byte_index=5,
+                byte_length=2,
+                resolved_direction=Pango.Direction.LTR,
+                is_paragraph_start=True,
+            ),
+        ],
+    ),
+    # Hebrew RTL + \n\r: two independent breaks produce 3 lines (empty middle from \r).
+    # "צח\n\rדל": line0=צח(0,4) RTL, line1=""(5,0) RTL, line2=דל(6,4) RTL
+    LineBBoxExtractionTestCase(
+        test_name="rtl_lfcr",
+        input_text="צח\n\rדל",
+        include_text=True,
+        expected_lines=[
+            ExpectedLineBBox(
+                text="צח",
+                byte_index=0,
+                byte_length=4,
+                resolved_direction=Pango.Direction.RTL,
+                is_paragraph_start=True,
+            ),
+            ExpectedLineBBox(
+                text="",
+                byte_index=5,
+                byte_length=0,
+                resolved_direction=Pango.Direction.RTL,
+                is_paragraph_start=True,
+            ),
+            ExpectedLineBBox(
+                text="דל",
+                byte_index=6,
+                byte_length=4,
+                resolved_direction=Pango.Direction.RTL,
+                is_paragraph_start=True,
+            ),
+        ],
+    ),
+    # Hebrew RTL + U+2029 (PS, 3 bytes): excluded, gap +3. Both lines are RTL.
+    # "נפ זס": line0=נפ(0,4) RTL, PS=4-6(excluded), line1=זס(7,4) RTL
+    LineBBoxExtractionTestCase(
+        test_name="rtl_ps",
+        input_text="נפ\u2029זס",  # noqa: RUF001
+        include_text=True,
+        expected_lines=[
+            ExpectedLineBBox(
+                text="נפ",
+                byte_index=0,
+                byte_length=4,
+                resolved_direction=Pango.Direction.RTL,
+                is_paragraph_start=True,
+            ),
+            ExpectedLineBBox(
+                text="זס",
+                byte_index=7,
+                byte_length=4,
+                resolved_direction=Pango.Direction.RTL,
+                is_paragraph_start=True,
+            ),
+        ],
+    ),
+    # Hebrew RTL + U+2028 (LS, 3 bytes): included in line0's text and byte_length.
+    # "בע גל": line0=בע+LS(0,7) RTL, line1=גל(7,4) RTL
+    LineBBoxExtractionTestCase(
+        test_name="rtl_ls",
+        input_text="בע\u2028גל",
+        include_text=True,
+        expected_lines=[
+            ExpectedLineBBox(
+                text="בע\u2028",
+                byte_index=0,
+                byte_length=7,
+                resolved_direction=Pango.Direction.RTL,
+                is_paragraph_start=True,
+            ),
+            ExpectedLineBBox(
+                text="גל",
+                byte_index=7,
+                byte_length=4,
+                resolved_direction=Pango.Direction.RTL,
+                is_paragraph_start=True,
+            ),
+        ],
+    ),
     LineBBoxExtractionTestCase(
         test_name="numbers_three_lines",
         input_text="123\n456\n7890",
@@ -225,8 +393,8 @@ class TestTextBoundingBoxExtractorLineBBoxExtraction:
             # Pango excludes '\n' bytes from each line's text and byte_length,
             # so joining all lines reconstructs the input without newlines.
             assert "".join(lb.text for lb in result.line_bboxes if lb.text is not None) == test_case.input_text.replace(
-                "\n", ""
-            )
+                "\r\n", ""
+            ).replace("\r", "").replace("\n", "").replace("\u2029", "")
 
         for line_bbox, expected in zip(result.line_bboxes, test_case.expected_lines, strict=True):
             assert line_bbox.text == expected.text
